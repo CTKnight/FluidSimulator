@@ -9,7 +9,7 @@
 - Yanda Li
 
 ## Problem Description
-Our ideas come from wathcing the final projects in previous years and we are inspired by the recent lecture of annimation. We are trying to solve is to calculate the locations and movements of fluid particles . With solving this problem, we are able to extensively implement animations nvolves with fluid. The challenging part of this project is how to caculate the movement and positions of the particles as well as ensuring the caculation can be established within reasonable amount of time. We are trying to use the parallel computing to solve the speed issue.
+Our ideas come from watching the final projects in previous years and we are inspired by the recent lecture of annimation. We are trying to solve is to calculate the locations and movements of fluid particles. With solving this problem, we are able to extensively implement animations involves with fluid. The challenging part of this project is how to caculate the movement and positions of the particles as well as ensuring the caculation can be established within reasonable amount of time. We are trying to use the parallel computing to solve the speed issue.
 ## Goals and Deliverables
  
 ### Deliverables
