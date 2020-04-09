@@ -42,11 +42,11 @@ Development will be mostly on Windows 10 OS. Programming Language: C++.
 
    It may looks like this:
 
-![Breaking dam](https://www.researchgate.net/profile/Jan_Bender/publication/309127716/figure/fig1/AS:416909465014273@1476410370492/A-breaking-dam-scenario-A-block-of-water-flows-under-gravity-and-shows-typical-breaking_W640.jpg)
+  ![Breaking dam](https://www.researchgate.net/profile/Jan_Bender/publication/309127716/figure/fig1/AS:416909465014273@1476410370492/A-breaking-dam-scenario-A-block-of-water-flows-under-gravity-and-shows-typical-breaking_W640.jpg)
 
-![Double dam](https://www.researchgate.net/profile/Jan_Bender/publication/309127716/figure/fig2/AS:416909465014274@1476410370548/A-diagonal-double-dam-break-scenario-in-a-rectangular-domain-shows-typical-splashes-and_W640.jpg)
+  ![Double dam](https://www.researchgate.net/profile/Jan_Bender/publication/309127716/figure/fig2/AS:416909465014274@1476410370548/A-diagonal-double-dam-break-scenario-in-a-rectangular-domain-shows-typical-splashes-and_W640.jpg)
 
-​	(Picture reference: https://www.researchgate.net/publication/309127716_Projective_fluids)
+  ​	(Picture reference: https://www.researchgate.net/publication/309127716_Projective_fluids)
 
 3. A GPU accelerated version simulator. (For aspirational plan)
 
