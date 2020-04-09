@@ -36,6 +36,7 @@ If the CUDA acceleration works really well, we can make a realtime/interactive f
 
 ## Schedule
 Here is our plan with scheduling the following four weeks for our final project:
+
 Week 1. prepartion for the team and start implementing on the scalable particle simulation.
 
 Week 2. implement the simulation and rendering the fluid particles
