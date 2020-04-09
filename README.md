@@ -9,7 +9,7 @@
 - Yanda Li
 
 ## Problem Description
-
+Our ideas come from wathcing the final projects in previous years and we are inspired by the recent lecture of annimation. We are trying to solve is to calculate the locations and movements of fluid particles . With solving this problem, we are able to extensively implement animations nvolves with fluid. The challenging part of this project is how to caculate the movement and positions of the particles as well as ensuring the caculation can be established within reasonable amount of time. We are trying to use the parallel computing to solve the speed issue.
 ## Goals and Deliverables
  
 ### Deliverables
@@ -35,7 +35,11 @@ If the CUDA acceleration works really well, we can make a realtime/interactive f
 
 
 ## Schedule
-
+Here is our plan with scheduling the following four weeks for our final project:
+Week 1. prepartion for the team and start implementing on the scalable particle simulation.
+Week 2. implement the simulation and rendering the fluid particles
+Week 3. Debug the previous implementation and record video
+Week 4. Work on final report and presentation
 ## Resources
 
 1. VTK file format
