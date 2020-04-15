@@ -204,14 +204,24 @@ endif()
 # Nearest neighbors
 set(BUILD_DEMO            OFF CACHE BOOL " " FORCE)
 set(BUILD_AS_SHARED_LIBS  ON  CACHE BOOL " " FORCE)
-add_subdirectory(ext/CompactNSearch)
-include_directories(ext/CompactNSearch/include)
+set(USE_DOUBLE_PRECISION  ON  CACHE BOOL " " FORCE)
+add_definitions(-DUSE_DOUBLE)
 
-# if (BUILD_CUDA)
-#   enable_language(CUDA)
-#   add_subdirectory(ext/cuNSearch)
-#   include_directories(ext/cuNSearch/include)
-# endif (BUILD_CUDA)
+add_subdirectory(ext/CompactNSearch)
+
+if(WIN32)
+  # Also worth mentioning is that since NANOGUI produces a DLL on windows,
+  # it is considered a "RUNTIME" and not a "LIBRARY" target according to CMake.
+  # See https://cmake.org/cmake/help/v3.0/prop_tgt/RUNTIME_OUTPUT_DIRECTORY.html
+  # > For DLL platforms the DLL part of a shared library is treated as a runtime target
+  set_target_properties(CompactNSearch PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+endif(WIN32)
+
+if (BUILD_CUDA)
+  enable_language(CUDA)
+  add_subdirectory(ext/cuNSearch)
+endif (BUILD_CUDA)
 
 # CGL
 if(BUILD_LIBCGL)
