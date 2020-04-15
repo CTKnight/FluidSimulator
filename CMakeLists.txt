@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.8)
-project(ClothSim)
+cmake_minimum_required(VERSION 3.12)
+project(FluidSim)
 
 #-------------------------------------------------------------------------------
 # Build options
@@ -7,6 +7,7 @@ project(ClothSim)
 option(BUILD_LIBCGL    "Build with libCGL"            ON)
 option(BUILD_DEBUG     "Build with debug settings"    OFF)
 option(BUILD_DOCS      "Build documentation"          OFF)
+option(BUILD_CUDA      "Build cuda version"           ON)
 
 if (BUILD_DEBUG)
   set(CMAKE_BUILD_TYPE Debug)
@@ -200,6 +201,18 @@ if(NOT WIN32)
   find_package(Freetype REQUIRED)
 endif()
 
+# Nearest neighbors
+set(BUILD_DEMO            OFF CACHE BOOL " " FORCE)
+set(BUILD_AS_SHARED_LIBS  ON  CACHE BOOL " " FORCE)
+add_subdirectory(ext/CompactNSearch)
+include_directories(ext/CompactNSearch/include)
+
+# if (BUILD_CUDA)
+#   enable_language(CUDA)
+#   add_subdirectory(ext/cuNSearch)
+#   include_directories(ext/cuNSearch/include)
+# endif (BUILD_CUDA)
+
 # CGL
 if(BUILD_LIBCGL)
   add_subdirectory(CGL)
@@ -222,4 +235,4 @@ if(BUILD_DOCS)
 endif()
 
 # Install settings
-set(CMAKE_INSTALL_PREFIX "${ClothSim_SOURCE_DIR}/")
+set(CMAKE_INSTALL_PREFIX "${FluidSim_SOURCE_DIR}/")
