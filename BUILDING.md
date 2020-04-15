@@ -1,6 +1,8 @@
 # Building instruction
 
 ## Projects Cmake default command
+- Make build dir
+  `mkdir build && cd build`
 - Generating solutions
   - without CUDA version
     `cmake -G"Visual Studio 14 2015 Win64" ..`
