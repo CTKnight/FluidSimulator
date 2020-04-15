@@ -2,6 +2,10 @@
 
 ## CS284A Final Project
 
+## Summary
+
+Our project is to simulate the movement of fluid in a given time. We plan to use a position-based method to achieve scalability for our particles. We will also apply several physical constraints to make our fluid rendering more real. After we finish our fluid simulator, we will consider to accelerate the rendering time of fluid and try to reduce the processing time to make a real-time simulator as our aspirational plan.
+
 ## Team Member
 
 - Jiewen Lai
@@ -70,7 +74,7 @@ Development will be mostly on Windows 10 OS. Programming Language: C++.
 ## Schedule
 Here is our plan with scheduling the following four weeks for our final project:
 
-Week 1. Preparation for the team and start implementing on simulation part.
+Week 1. Preparation for the team and start implementing on simulation part
 
 Week 2. Complete the simulation and rendering the fluid particles(Catch the milestone deadline)
 
