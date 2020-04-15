@@ -1,0 +1,9 @@
+[submodule "ext/nanogui"]
+	path = ext/nanogui
+	url = https://github.com/wjakob/nanogui.git
+[submodule "ext/cuNSearch"]
+	path = ext/cuNSearch
+	url = https://github.com/CTKnight/cuNSearch.git
+[submodule "ext/CompactNSearch"]
+	path = ext/cuNSearch
+	url = https://github.com/CTKnight/CompactNSearch.git
