@@ -81,7 +81,7 @@ Week 2. Complete the simulation and rendering the fluid particles(Catch the mile
 Week 3. Debug the previous implementation and record video
 
 Week 4. Work on final report and presentation
-## Resources
+## Resources (see also: BUILDING.md)
 
 1. Slides explaining Position Based Fluid from http://www.cse.chalmers.se/edu/year/2018/course/TDA361/Advanced%20Computer%20Graphics/Position%20Based%20Fluids.pdf
 2. Paper from http://mmacklin.com/pbf_sig_preprint.pdf

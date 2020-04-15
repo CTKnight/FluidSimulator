@@ -1,15 +1,15 @@
 # Building instruction
 
-## Cmake default command
+## Projects Cmake default command
 - Generating solutions
-  `cmake -G"Visual Studio 14 2015 Win64" ..`
-
-  add `-DCMAKE_CUDA_FLAGS="-arch=sm_60"` if contains cuda code
+  - without CUDA version
+    `cmake -G"Visual Studio 14 2015 Win64" ..`
+  - with CUDA version
+    `cmake -G"Visual Studio 14 2015 Win64" -DBUILD_CUDA=ON -DCMAKE_CUDA_FLAGS="-arch=sm_60" ..`
 - Compiling projects
   `cmake --build . --config Release`
-- Installing dependencies
-  `cmake --build . --config Release --target install`
 
 ## Dependencies
-
-- 
+- CUDA 10.2
+- ext/cuNSearch
+- ext/CompactNSearch

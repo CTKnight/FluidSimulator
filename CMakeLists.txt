@@ -7,7 +7,7 @@ project(FluidSim)
 option(BUILD_LIBCGL    "Build with libCGL"            ON)
 option(BUILD_DEBUG     "Build with debug settings"    OFF)
 option(BUILD_DOCS      "Build documentation"          OFF)
-option(BUILD_CUDA      "Build cuda version"           ON)
+option(BUILD_CUDA      "Build cuda version"           OFF)
 
 if (BUILD_DEBUG)
   set(CMAKE_BUILD_TYPE Debug)
