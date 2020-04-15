@@ -83,6 +83,14 @@ add_executable(nsearchDemo nsearchMain.cpp)
 target_link_libraries(nsearchDemo
     CompactNSearch
 )
+
+if (BUILD_CUDA)
+  add_executable(cuNSearchDemo cuNSearchMain.cu)
+  target_link_libraries(cuNSearchDemo
+      cuNSearch
+  )
+endif (BUILD_CUDA)
+
 #-------------------------------------------------------------------------------
 # Platform-specific configurations for target
 #-------------------------------------------------------------------------------

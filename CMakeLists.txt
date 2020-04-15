@@ -219,8 +219,18 @@ if(WIN32)
 endif(WIN32)
 
 if (BUILD_CUDA)
+  set(CUNSEARCH_USE_DOUBLE_PRECISION  ON  CACHE BOOL " " FORCE)
+  add_definitions(-DCUNSEARCH_USE_DOUBLE_PRECISION)
   enable_language(CUDA)
   add_subdirectory(ext/cuNSearch)
+  if(WIN32)
+  # Also worth mentioning is that since NANOGUI produces a DLL on windows,
+  # it is considered a "RUNTIME" and not a "LIBRARY" target according to CMake.
+  # See https://cmake.org/cmake/help/v3.0/prop_tgt/RUNTIME_OUTPUT_DIRECTORY.html
+  # > For DLL platforms the DLL part of a shared library is treated as a runtime target
+  set_target_properties(cuNSearch PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+endif(WIN32)
 endif (BUILD_CUDA)
 
 # CGL
