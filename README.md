@@ -74,13 +74,14 @@ Development will be mostly on Windows 10 OS. Programming Language: C++.
 ## Schedule
 Here is our plan with scheduling the following four weeks for our final project:
 
-Week 1. Preparation for the team and start implementing on simulation part
+- Week 1. Preparation for the team and start implementing on simulation part
 
-Week 2. Complete the simulation and rendering the fluid particles(Catch the milestone deadline)
+- Week 2. Complete the simulation and rendering the fluid particles(Catch the milestone deadline)
 
-Week 3. Debug the previous implementation and record video
+- Week 3. Debug the previous implementation and record video
 
-Week 4. Work on final report and presentation
+- Week 4. Work on final report and presentation
+
 ## Resources (see also: BUILDING.md)
 
 1. Slides explaining Position Based Fluid from http://www.cse.chalmers.se/edu/year/2018/course/TDA361/Advanced%20Computer%20Graphics/Position%20Based%20Fluids.pdf
