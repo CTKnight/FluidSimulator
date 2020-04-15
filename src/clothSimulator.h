@@ -2,7 +2,7 @@
 #define CGL_CLOTH_SIMULATOR_H
 
 #include <nanogui/nanogui.h>
-
+#include <memory>
 #include "camera.h"
 #include "cloth.h"
 #include "collision/collisionObject.h"
