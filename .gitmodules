@@ -5,5 +5,5 @@
 	path = ext/cuNSearch
 	url = https://github.com/CTKnight/cuNSearch.git
 [submodule "ext/CompactNSearch"]
-	path = ext/cuNSearch
+	path = ext/CompactNSearch
 	url = https://github.com/CTKnight/CompactNSearch.git
