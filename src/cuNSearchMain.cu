@@ -67,7 +67,7 @@ void testCuNSearch()
 
 	//Add point set from the test data
 	auto pointSetIndex = nsearch.add_point_set(positions.front().data(), positions.size(), true, true);
-
+	Timing::reset();
 	for (size_t i = 0; i < 5; i++)
 	{
 		if (i != 0)
@@ -76,10 +76,11 @@ void testCuNSearch()
 			nsearch.point_set(pointSetIndex).sort_field((Real3*)nsearch.point_set(pointSetIndex).GetPoints());
 		}
 
-		Timing::reset();
+		Timing::startTiming();
 		nsearch.find_neighbors();
-		Timing::printAverageTimes();
+		Timing::stopTiming();
 	}
+	Timing::printAverageTimes();
 
 	//Neighborhood search result test
 	auto &pointSet = nsearch.point_set(0);
