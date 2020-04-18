@@ -6,10 +6,11 @@
 - Make build dir
   `mkdir build && cd build`
 - Generating solutions
+  add `-G"Visual Studio 14 2015 Win64"` if it's built on Windows
   - without CUDA version
-    `cmake -G"Visual Studio 14 2015 Win64" ..`
+    `cmake  ..`
   - with CUDA version
-    `cmake -G"Visual Studio 14 2015 Win64" -DBUILD_CUDA=ON -DCMAKE_CUDA_FLAGS="-arch=sm_60" ..`
+    `cmake -DBUILD_CUDA=ON -DCMAKE_CUDA_FLAGS="-arch=sm_60" ..`
 - Compiling projects
   `cmake --build . --config Release`
 
