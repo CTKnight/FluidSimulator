@@ -1,6 +1,8 @@
 # Building instruction
 
 ## Projects Cmake default command
+- Git clone pull submodule
+  `git submodule update --init --recursive`
 - Make build dir
   `mkdir build && cd build`
 - Generating solutions
