@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 2.8)
 project(FluidSim)
 
 #-------------------------------------------------------------------------------
@@ -210,10 +210,6 @@ add_definitions(-DUSE_DOUBLE)
 add_subdirectory(ext/CompactNSearch)
 
 if(WIN32)
-  # Also worth mentioning is that since NANOGUI produces a DLL on windows,
-  # it is considered a "RUNTIME" and not a "LIBRARY" target according to CMake.
-  # See https://cmake.org/cmake/help/v3.0/prop_tgt/RUNTIME_OUTPUT_DIRECTORY.html
-  # > For DLL platforms the DLL part of a shared library is treated as a runtime target
   set_target_properties(CompactNSearch PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 endif(WIN32)
@@ -224,13 +220,9 @@ if (BUILD_CUDA)
   enable_language(CUDA)
   add_subdirectory(ext/cuNSearch)
   if(WIN32)
-  # Also worth mentioning is that since NANOGUI produces a DLL on windows,
-  # it is considered a "RUNTIME" and not a "LIBRARY" target according to CMake.
-  # See https://cmake.org/cmake/help/v3.0/prop_tgt/RUNTIME_OUTPUT_DIRECTORY.html
-  # > For DLL platforms the DLL part of a shared library is treated as a runtime target
   set_target_properties(cuNSearch PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-endif(WIN32)
+  endif(WIN32)
 endif (BUILD_CUDA)
 
 # CGL

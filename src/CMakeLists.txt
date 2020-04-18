@@ -103,4 +103,4 @@ endif(APPLE)
 set(EXECUTABLE_OUTPUT_PATH ..)
 
 # Install to project root
-install(TARGETS fluidsim DESTINATION ${ClothSim_SOURCE_DIR})
+install(TARGETS fluidsim DESTINATION ${FluidSim_SOURCE_DIR})
