@@ -29,11 +29,11 @@ using json = nlohmann::json;
 
 #define msg(s) cerr << "[ClothSim] " << s << endl;
 
-const string SPHERE = "sphere";
 const string PLANE = "plane";
-const string CLOTH = "cloth";
+const string FLUID = "fluid";
+const string COLLISIONS = "collisions";
 
-const unordered_set<string> VALID_KEYS = {SPHERE, PLANE, CLOTH};
+const unordered_set<string> VALID_KEYS = {FLUID, COLLISIONS};
 
 ClothSimulator *app = nullptr;
 GLFWwindow *window = nullptr;
@@ -156,7 +156,22 @@ void incompleteObjectError(const char *object, const char *attribute) {
   exit(-1);
 }
 
-bool loadObjectsFromFile(string filename, Cloth *cloth, ClothParameters *cp, vector<CollisionObject *>* objects, int sphere_num_lat, int sphere_num_lon) {
+bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<FluidParameters> &fp, vector<CollisionObject *>* objects, int sphere_num_lat, int sphere_num_lon) {
+  // TODO: debug dummy
+  std::cout << "loadObjectsFromFile: Dummy\n";
+  auto position = make_unique<vector<Fluid::Triad>>();
+  position->reserve(1000);
+  for (auto i = 0; i < 10; i++) {
+    for (auto j = 0; j < 10; j++) {
+      for (auto k = 0; k < 10; k++) {
+        position->emplace_back(Fluid::Triad{i/100., j/100., k/100.});
+      }
+    }
+  }
+  fp = make_shared<FluidParameters>(1,1,1);
+  fp->particleRadius = 0.005;
+  fluid = make_shared<Fluid>(std::move(position));
+  return true;
   // Read JSON from file
   ifstream i(filename);
   if (!i.good()) {
@@ -180,7 +195,7 @@ bool loadObjectsFromFile(string filename, Cloth *cloth, ClothParameters *cp, vec
     json object = it.value();
 
     // Parse object depending on type (cloth, sphere, or plane)
-    if (key == CLOTH) {
+    if (key == FLUID) {
       // Cloth
       double width, height;
       int num_width_points, num_height_points;
@@ -239,38 +254,8 @@ bool loadObjectsFromFile(string filename, Cloth *cloth, ClothParameters *cp, vec
         }
       }
 
-      cloth->width = width;
-      cloth->height = height;
-      cloth->num_width_points = num_width_points;
-      cloth->num_height_points = num_height_points;
-      cloth->thickness = thickness;
-      cloth->orientation = orientation;
-      cloth->pinned = pinned;
-
       // Cloth parameters
-      bool enable_structural_constraints, enable_shearing_constraints, enable_bending_constraints;
       double damping, density, ks;
-
-      auto it_enable_structural = object.find("enable_structural");
-      if (it_enable_structural != object.end()) {
-        enable_structural_constraints = *it_enable_structural;
-      } else {
-        incompleteObjectError("cloth", "enable_structural");
-      }
-
-      auto it_enable_shearing = object.find("enable_shearing");
-      if (it_enable_shearing != object.end()) {
-        enable_shearing_constraints = *it_enable_shearing;
-      } else {
-        incompleteObjectError("cloth", "it_enable_shearing");
-      }
-
-      auto it_enable_bending = object.find("enable_bending");
-      if (it_enable_bending != object.end()) {
-        enable_bending_constraints = *it_enable_bending;
-      } else {
-        incompleteObjectError("cloth", "it_enable_bending");
-      }
 
       auto it_damping = object.find("damping");
       if (it_damping != object.end()) {
@@ -293,43 +278,12 @@ bool loadObjectsFromFile(string filename, Cloth *cloth, ClothParameters *cp, vec
         incompleteObjectError("cloth", "ks");
       }
 
-      cp->enable_structural_constraints = enable_structural_constraints;
-      cp->enable_shearing_constraints = enable_shearing_constraints;
-      cp->enable_bending_constraints = enable_bending_constraints;
-      cp->density = density;
-      cp->damping = damping;
-      cp->ks = ks;
-    } else if (key == SPHERE) {
-      Vector3D origin;
-      double radius, friction;
-
-      auto it_origin = object.find("origin");
-      if (it_origin != object.end()) {
-        vector<double> vec_origin = *it_origin;
-        origin = Vector3D(vec_origin[0], vec_origin[1], vec_origin[2]);
-      } else {
-        incompleteObjectError("sphere", "origin");
-      }
-
-      auto it_radius = object.find("radius");
-      if (it_radius != object.end()) {
-        radius = *it_radius;
-      } else {
-        incompleteObjectError("sphere", "radius");
-      }
-
-      auto it_friction = object.find("friction");
-      if (it_friction != object.end()) {
-        friction = *it_friction;
-      } else {
-        incompleteObjectError("sphere", "friction");
-      }
-
-      Sphere *s = new Sphere(origin, radius, friction, sphere_num_lat, sphere_num_lon);
-      objects->push_back(s);
-    } else { // PLANE
+      fp->density = density;
+      fp->damping = damping;
+      fp->ks = ks;
+    } else if (key == COLLISIONS) { // PLANE
       Vector3D point, normal;
-      double friction;
+      double friction = 0.0;
 
       auto it_point = object.find("point");
       if (it_point != object.end()) {
@@ -396,8 +350,8 @@ int main(int argc, char **argv) {
   std::string project_root;
   bool found_project_root = find_project_root(search_paths, project_root);
   
-  Cloth cloth;
-  ClothParameters cp;
+  shared_ptr<Fluid> fluid;
+  shared_ptr<FluidParameters> fp = make_shared<FluidParameters>();
   vector<CollisionObject *> objects;
   
   int c;
@@ -456,11 +410,11 @@ int main(int argc, char **argv) {
   if (!file_specified) { // No arguments, default initialization
     std::stringstream def_fname;
     def_fname << project_root;
-    def_fname << "/scene/pinned2.json";
+    def_fname << "/scene/fluid.json";
     file_to_load_from = def_fname.str();
   }
   
-  bool success = loadObjectsFromFile(file_to_load_from, &cloth, &cp, &objects, sphere_num_lat, sphere_num_lon);
+  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects, sphere_num_lat, sphere_num_lon);
   if (!success) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
   }
@@ -469,14 +423,10 @@ int main(int argc, char **argv) {
 
   createGLContexts();
 
-  // Initialize the Cloth object
-  cloth.buildGrid();
-  cloth.buildClothMesh();
-
   // Initialize the ClothSimulator object
   app = new ClothSimulator(project_root, screen);
-  app->loadCloth(&cloth);
-  app->loadClothParameters(&cp);
+  app->loadFluid(fluid);
+  app->loadFluidParameters(fp);
   app->loadCollisionObjects(&objects);
   app->init();
 

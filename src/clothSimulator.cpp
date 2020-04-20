@@ -7,7 +7,7 @@
 #include "clothSimulator.h"
 
 #include "camera.h"
-#include "cloth.h"
+#include "fluid.h"
 #include "collision/plane.h"
 #include "collision/sphere.h"
 #include "misc/camera_info.h"
@@ -145,9 +145,9 @@ void ClothSimulator::load_shaders() {
     shaders_combobox_names.push_back(shader_name);
   }
   
-  // Assuming that it's there, use "Wireframe" by default
+  // Assuming that it's there, use "Normal" by default
   for (size_t i = 0; i < shaders_combobox_names.size(); ++i) {
-    if (shaders_combobox_names[i] == "Wireframe") {
+    if (shaders_combobox_names[i] == "Normal") {
       active_shader_idx = i;
       break;
     }
@@ -175,14 +175,12 @@ ClothSimulator::~ClothSimulator() {
   glDeleteTextures(1, &m_gl_texture_4);
   glDeleteTextures(1, &m_gl_cubemap_tex);
 
-  if (cloth) delete cloth;
-  if (cp) delete cp;
   if (collision_objects) delete collision_objects;
 }
 
-void ClothSimulator::loadCloth(Cloth *cloth) { this->cloth = cloth; }
+void ClothSimulator::loadFluid(std::shared_ptr<Fluid> fluid) { this->fluid = fluid; }
 
-void ClothSimulator::loadClothParameters(ClothParameters *cp) { this->cp = cp; }
+void ClothSimulator::loadFluidParameters(std::shared_ptr<FluidParameters> fp) { this->fp = fp; }
 
 void ClothSimulator::loadCollisionObjects(vector<CollisionObject *> *objects) { this->collision_objects = objects; }
 
@@ -208,14 +206,15 @@ void ClothSimulator::init() {
 
   Vector3D avg_pm_position(0, 0, 0);
 
-  for (auto &pm : cloth->point_masses) {
-    avg_pm_position += pm.position / cloth->point_masses.size();
-  }
+  // for (auto &pm : fluid->point_masses) {
+  //   avg_pm_position += pm.position / fluid->point_masses.size();
+  // }
 
   CGL::Vector3D target(avg_pm_position.x, avg_pm_position.y / 2,
                        avg_pm_position.z);
   CGL::Vector3D c_dir(0., 0., 0.);
-  canonical_view_distance = max(cloth->width, cloth->height) * 0.9;
+  // canonical_view_distance = max(fluid->width, fluid->height) * 0.9;
+  canonical_view_distance = 2;
   scroll_rate = canonical_view_distance / 10;
 
   view_distance = canonical_view_distance * 2;
@@ -245,7 +244,7 @@ void ClothSimulator::drawContents() {
     vector<Vector3D> external_accelerations = {gravity};
 
     for (int i = 0; i < simulation_steps; i++) {
-      cloth->simulate(frames_per_sec, simulation_steps, cp, external_accelerations, collision_objects);
+      fluid->simulate(frames_per_sec, simulation_steps, fp, external_accelerations, collision_objects);
     }
   }
 
@@ -268,173 +267,15 @@ void ClothSimulator::drawContents() {
 
   shader.setUniform("u_model", model);
   shader.setUniform("u_view_projection", viewProjection);
-
-  switch (active_shader.type_hint) {
-  case WIREFRAME:
-    shader.setUniform("u_color", color, false);
-    drawWireframe(shader);
-    break;
-  case NORMALS:
-    drawNormals(shader);
-    break;
-  case PHONG:
   
-    // Others
-    Vector3D cam_pos = camera.position();
-    shader.setUniform("u_color", color, false);
-    shader.setUniform("u_cam_pos", Vector3f(cam_pos.x, cam_pos.y, cam_pos.z), false);
-    shader.setUniform("u_light_pos", Vector3f(0.5, 2, 2), false);
-    shader.setUniform("u_light_intensity", Vector3f(3, 3, 3), false);
-    shader.setUniform("u_texture_1_size", Vector2f(m_gl_texture_1_size.x, m_gl_texture_1_size.y), false);
-    shader.setUniform("u_texture_2_size", Vector2f(m_gl_texture_2_size.x, m_gl_texture_2_size.y), false);
-    shader.setUniform("u_texture_3_size", Vector2f(m_gl_texture_3_size.x, m_gl_texture_3_size.y), false);
-    shader.setUniform("u_texture_4_size", Vector2f(m_gl_texture_4_size.x, m_gl_texture_4_size.y), false);
-    // Textures
-    shader.setUniform("u_texture_1", 1, false);
-    shader.setUniform("u_texture_2", 2, false);
-    shader.setUniform("u_texture_3", 3, false);
-    shader.setUniform("u_texture_4", 4, false);
-    
-    shader.setUniform("u_normal_scaling", m_normal_scaling, false);
-    shader.setUniform("u_height_scaling", m_height_scaling, false);
-    
-    shader.setUniform("u_texture_cubemap", 5, false);
-    drawPhong(shader);
-    break;
+  // render fluid particles
+  if (fluid) {
+    fluid->render(shader, fp);
   }
 
   for (CollisionObject *co : *collision_objects) {
     co->render(shader);
   }
-}
-
-void ClothSimulator::drawWireframe(GLShader &shader) {
-  int num_structural_springs =
-      2 * cloth->num_width_points * cloth->num_height_points -
-      cloth->num_width_points - cloth->num_height_points;
-  int num_shear_springs =
-      2 * (cloth->num_width_points - 1) * (cloth->num_height_points - 1);
-  int num_bending_springs = num_structural_springs - cloth->num_width_points -
-                            cloth->num_height_points;
-
-  int num_springs = cp->enable_structural_constraints * num_structural_springs +
-                    cp->enable_shearing_constraints * num_shear_springs +
-                    cp->enable_bending_constraints * num_bending_springs;
-
-  MatrixXf positions(4, num_springs * 2);
-  MatrixXf normals(4, num_springs * 2);
-
-  // Draw springs as lines
-
-  int si = 0;
-
-  for (int i = 0; i < cloth->springs.size(); i++) {
-    Spring s = cloth->springs[i];
-
-    if ((s.spring_type == STRUCTURAL && !cp->enable_structural_constraints) ||
-        (s.spring_type == SHEARING && !cp->enable_shearing_constraints) ||
-        (s.spring_type == BENDING && !cp->enable_bending_constraints)) {
-      continue;
-    }
-
-    Vector3D pa = s.pm_a->position;
-    Vector3D pb = s.pm_b->position;
-
-    Vector3D na = s.pm_a->normal();
-    Vector3D nb = s.pm_b->normal();
-
-    positions.col(si) << pa.x, pa.y, pa.z, 1.0;
-    positions.col(si + 1) << pb.x, pb.y, pb.z, 1.0;
-
-    normals.col(si) << na.x, na.y, na.z, 0.0;
-    normals.col(si + 1) << nb.x, nb.y, nb.z, 0.0;
-
-    si += 2;
-  }
-
-  //shader.setUniform("u_color", nanogui::Color(1.0f, 1.0f, 1.0f, 1.0f), false);
-  shader.uploadAttrib("in_position", positions, false);
-  // Commented out: the wireframe shader does not have this attribute
-  //shader.uploadAttrib("in_normal", normals);
-
-  shader.drawArray(GL_LINES, 0, num_springs * 2);
-}
-
-void ClothSimulator::drawNormals(GLShader &shader) {
-  int num_tris = cloth->clothMesh->triangles.size();
-
-  MatrixXf positions(4, num_tris * 3);
-  MatrixXf normals(4, num_tris * 3);
-
-  for (int i = 0; i < num_tris; i++) {
-    Triangle *tri = cloth->clothMesh->triangles[i];
-
-    Vector3D p1 = tri->pm1->position;
-    Vector3D p2 = tri->pm2->position;
-    Vector3D p3 = tri->pm3->position;
-
-    Vector3D n1 = tri->pm1->normal();
-    Vector3D n2 = tri->pm2->normal();
-    Vector3D n3 = tri->pm3->normal();
-
-    positions.col(i * 3) << p1.x, p1.y, p1.z, 1.0;
-    positions.col(i * 3 + 1) << p2.x, p2.y, p2.z, 1.0;
-    positions.col(i * 3 + 2) << p3.x, p3.y, p3.z, 1.0;
-
-    normals.col(i * 3) << n1.x, n1.y, n1.z, 0.0;
-    normals.col(i * 3 + 1) << n2.x, n2.y, n2.z, 0.0;
-    normals.col(i * 3 + 2) << n3.x, n3.y, n3.z, 0.0;
-  }
-
-  shader.uploadAttrib("in_position", positions, false);
-  shader.uploadAttrib("in_normal", normals, false);
-
-  shader.drawArray(GL_TRIANGLES, 0, num_tris * 3);
-}
-
-void ClothSimulator::drawPhong(GLShader &shader) {
-  int num_tris = cloth->clothMesh->triangles.size();
-
-  MatrixXf positions(4, num_tris * 3);
-  MatrixXf normals(4, num_tris * 3);
-  MatrixXf uvs(2, num_tris * 3);
-  MatrixXf tangents(4, num_tris * 3);
-
-  for (int i = 0; i < num_tris; i++) {
-    Triangle *tri = cloth->clothMesh->triangles[i];
-
-    Vector3D p1 = tri->pm1->position;
-    Vector3D p2 = tri->pm2->position;
-    Vector3D p3 = tri->pm3->position;
-
-    Vector3D n1 = tri->pm1->normal();
-    Vector3D n2 = tri->pm2->normal();
-    Vector3D n3 = tri->pm3->normal();
-
-    positions.col(i * 3    ) << p1.x, p1.y, p1.z, 1.0;
-    positions.col(i * 3 + 1) << p2.x, p2.y, p2.z, 1.0;
-    positions.col(i * 3 + 2) << p3.x, p3.y, p3.z, 1.0;
-
-    normals.col(i * 3    ) << n1.x, n1.y, n1.z, 0.0;
-    normals.col(i * 3 + 1) << n2.x, n2.y, n2.z, 0.0;
-    normals.col(i * 3 + 2) << n3.x, n3.y, n3.z, 0.0;
-    
-    uvs.col(i * 3    ) << tri->uv1.x, tri->uv1.y;
-    uvs.col(i * 3 + 1) << tri->uv2.x, tri->uv2.y;
-    uvs.col(i * 3 + 2) << tri->uv3.x, tri->uv3.y;
-    
-    tangents.col(i * 3    ) << 1.0, 0.0, 0.0, 1.0;
-    tangents.col(i * 3 + 1) << 1.0, 0.0, 0.0, 1.0;
-    tangents.col(i * 3 + 2) << 1.0, 0.0, 0.0, 1.0;
-  }
-
-
-  shader.uploadAttrib("in_position", positions, false);
-  shader.uploadAttrib("in_normal", normals, false);
-  shader.uploadAttrib("in_uv", uvs, false);
-  shader.uploadAttrib("in_tangent", tangents, false);
-
-  shader.drawArray(GL_TRIANGLES, 0, num_tris * 3);
 }
 
 // ----------------------------------------------------------------------------
@@ -577,7 +418,7 @@ bool ClothSimulator::keyCallbackEvent(int key, int scancode, int action,
       break;
     case 'r':
     case 'R':
-      cloth->reset();
+      fluid->reset();
       break;
     case ' ':
       resetCamera();
@@ -624,33 +465,6 @@ void ClothSimulator::initGUI(Screen *screen) {
   window->setPosition(Vector2i(default_window_size(0) - 245, 15));
   window->setLayout(new GroupLayout(15, 6, 14, 5));
 
-  // Spring types
-
-  new Label(window, "Spring types", "sans-bold");
-
-  {
-    Button *b = new Button(window, "structural");
-    b->setFlags(Button::ToggleButton);
-    b->setPushed(cp->enable_structural_constraints);
-    b->setFontSize(14);
-    b->setChangeCallback(
-        [this](bool state) { cp->enable_structural_constraints = state; });
-
-    b = new Button(window, "shearing");
-    b->setFlags(Button::ToggleButton);
-    b->setPushed(cp->enable_shearing_constraints);
-    b->setFontSize(14);
-    b->setChangeCallback(
-        [this](bool state) { cp->enable_shearing_constraints = state; });
-
-    b = new Button(window, "bending");
-    b->setFlags(Button::ToggleButton);
-    b->setPushed(cp->enable_bending_constraints);
-    b->setFontSize(14);
-    b->setChangeCallback(
-        [this](bool state) { cp->enable_bending_constraints = state; });
-  }
-
   // Mass-spring parameters
 
   new Label(window, "Parameters", "sans-bold");
@@ -669,10 +483,10 @@ void ClothSimulator::initGUI(Screen *screen) {
     fb->setEditable(true);
     fb->setFixedSize(Vector2i(100, 20));
     fb->setFontSize(14);
-    fb->setValue(cp->density / 10);
+    fb->setValue(fp->density / 10);
     fb->setUnits("g/cm^2");
     fb->setSpinnable(true);
-    fb->setCallback([this](float value) { cp->density = (double)(value * 10); });
+    fb->setCallback([this](float value) { fp->density = (double)(value * 10); });
 
     new Label(panel, "ks :", "sans-bold");
 
@@ -680,11 +494,11 @@ void ClothSimulator::initGUI(Screen *screen) {
     fb->setEditable(true);
     fb->setFixedSize(Vector2i(100, 20));
     fb->setFontSize(14);
-    fb->setValue(cp->ks);
+    fb->setValue(fp->ks);
     fb->setUnits("N/m");
     fb->setSpinnable(true);
     fb->setMinValue(0);
-    fb->setCallback([this](float value) { cp->ks = value; });
+    fb->setCallback([this](float value) { fp->ks = value; });
   }
 
   // Simulation constants
@@ -731,12 +545,12 @@ void ClothSimulator::initGUI(Screen *screen) {
         new BoxLayout(Orientation::Horizontal, Alignment::Middle, 0, 5));
 
     Slider *slider = new Slider(panel);
-    slider->setValue(cp->damping);
+    slider->setValue(fp->damping);
     slider->setFixedWidth(105);
 
     TextBox *percentage = new TextBox(panel);
     percentage->setFixedWidth(75);
-    percentage->setValue(to_string(cp->damping));
+    percentage->setValue(to_string(fp->damping));
     percentage->setUnits("%");
     percentage->setFontSize(14);
 
@@ -744,7 +558,7 @@ void ClothSimulator::initGUI(Screen *screen) {
       percentage->setValue(std::to_string(value));
     });
     slider->setFinalCallback([&](float value) {
-      cp->damping = (double)value;
+      fp->damping = (double)value;
       // cout << "Final slider value: " << (int)(value * 100) << endl;
     });
   }

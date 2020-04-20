@@ -41,6 +41,7 @@ private:
   MatrixXf normals;
   MatrixXf uvs;
   MatrixXf tangents;
+  Matrix4f model;
 };
 
 
