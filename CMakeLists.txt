@@ -37,7 +37,7 @@ if(APPLE)
   # Clang configuration
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
-    set(CLANG_CXX_FLAGS "-std=c++11 -m64")
+    set(CLANG_CXX_FLAGS "-std=c++14 -m64")
 
     if(BUILD_DEBUG)
       set(CMAKE_BUILD_TYPE Debug)
@@ -56,7 +56,7 @@ if(APPLE)
   # GCC configuration
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-    set(GCC_CXX_FLAGS "-std=gnu++11 -m64")
+    set(GCC_CXX_FLAGS "-std=gnu++14 -m64")
 
     if(BUILD_DEBUG)
       set(CMAKE_BUILD_TYPE Debug)
@@ -80,7 +80,7 @@ if(UNIX AND NOT APPLE)
   # GCC only
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-    set(GCC_CXX_FLAGS "-std=gnu++11 -m64")
+    set(GCC_CXX_FLAGS "-std=gnu++14 -m64")
     set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -Wno-deprecated-declarations")
     set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -Wno-misleading-indentation")
 
@@ -130,7 +130,7 @@ if(WIN32)
 
   if(MSVC)
 
-    set(MSVC_CXX_FLAGS "-std=gnu++11")
+    set(MSVC_CXX_FLAGS "-std=gnu++14")
 
     if(BUILD_DEBUG)
         set(CMAKE_BUILD_TYPE Debug)
@@ -144,7 +144,7 @@ if(WIN32)
 
   if(MINGW)
 
-    set(MSVC_CXX_FLAGS "-std=gnu++11")
+    set(MSVC_CXX_FLAGS "-std=gnu++14")
 
     if(BUILD_DEBUG)
         set(CMAKE_BUILD_TYPE Debug)

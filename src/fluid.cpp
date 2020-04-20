@@ -2,6 +2,7 @@
 #include <math.h>
 #include <random>
 #include <vector>
+#include <exception>
 
 #include "fluid.h"
 #include "collision/plane.h"
@@ -16,12 +17,12 @@ Fluid::Fluid(
     unique_ptr<vector<Triad>> &&particle_velocities
 ): particleSphereMesh(4, 4), nsearch(0.01) {
   if (particle_positions == nullptr) {
-    throw std::exception("particle_positions == nullptr!");
+    throw std::runtime_error("particle_positions == nullptr!");
   }
   this->particle_positions  = std::move(particle_positions);
   if (particle_velocities != nullptr) {
     if (particle_positions->size() != particle_velocities->size()) {
-      throw std::exception("particle_positions->size()  != particle_velocities->size()!");
+      throw std::runtime_error("particle_positions->size()  != particle_velocities->size()!");
     }
     this->particle_velocities = std::move(particle_velocities);
   } else {

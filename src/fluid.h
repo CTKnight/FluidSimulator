@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include "CGL/CGL.h"
 #include "CGL/misc.h"
