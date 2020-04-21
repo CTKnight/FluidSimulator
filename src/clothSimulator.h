@@ -6,6 +6,7 @@
 #include "camera.h"
 #include "fluid.h"
 #include "collision/collisionObject.h"
+#include "renderer.h"
 
 using namespace nanogui;
 
@@ -14,7 +15,7 @@ enum ShaderTypeHint { WIREFRAME = 0, NORMALS = 1, PHONG = 2 };
 
 class ClothSimulator {
 public:
-  ClothSimulator(std::string project_root, Screen *screen);
+  ClothSimulator(std::string project_root, Screen *screen, const shared_ptr<ObjectRenderer> &renderer);
   ~ClothSimulator();
 
   void init();
@@ -64,6 +65,9 @@ private:
   std::shared_ptr<Fluid> fluid;
   std::shared_ptr<FluidParameters> fp;
   vector<CollisionObject *> *collision_objects;
+
+  // Renderer
+  std::shared_ptr<ObjectRenderer> renderer;
 
   // OpenGL attributes
 

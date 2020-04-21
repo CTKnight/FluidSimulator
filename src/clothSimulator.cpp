@@ -154,8 +154,8 @@ void ClothSimulator::load_shaders() {
   }
 }
 
-ClothSimulator::ClothSimulator(std::string project_root, Screen *screen)
-: m_project_root(project_root) {
+ClothSimulator::ClothSimulator(std::string project_root, Screen *screen, const shared_ptr<ObjectRenderer> &renderer)
+: m_project_root(project_root), renderer(renderer) {
   this->screen = screen;
   
   this->load_shaders();
@@ -268,14 +268,13 @@ void ClothSimulator::drawContents() {
   shader.setUniform("u_model", model);
   shader.setUniform("u_view_projection", viewProjection);
   
-  // render fluid particles
-  if (fluid) {
-    fluid->render(shader, fp);
+  if (fluid && fp) {
+    renderer->render(shader, *fluid, *fp);
   }
-
-  for (CollisionObject *co : *collision_objects) {
-    co->render(shader);
+  if (collision_objects) {
+    renderer->render(shader, *collision_objects);
   }
+  
 }
 
 // ----------------------------------------------------------------------------

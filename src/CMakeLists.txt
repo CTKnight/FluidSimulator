@@ -21,6 +21,9 @@ set(FLUIDSIM_VIEWER_SOURCE
 
     # Camera
     camera.cpp
+
+    # Renderer
+    renderer.cpp
 )
 
 # Windows-only sources

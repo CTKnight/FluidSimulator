@@ -356,8 +356,8 @@ int main(int argc, char **argv) {
   
   int c;
   
-  int sphere_num_lat = 40;
-  int sphere_num_lon = 40;
+  int sphere_num_lat = 5;
+  int sphere_num_lon = 5;
   
   std::string file_to_load_from;
   bool file_specified = false;
@@ -424,7 +424,8 @@ int main(int argc, char **argv) {
   createGLContexts();
 
   // Initialize the ClothSimulator object
-  app = new ClothSimulator(project_root, screen);
+  auto renderer = std::make_shared<OpenGLRenderder>(Misc::SphereMesh(sphere_num_lat, sphere_num_lon));
+  app = new ClothSimulator(project_root, screen, renderer);
   app->loadFluid(fluid);
   app->loadFluidParameters(fp);
   app->loadCollisionObjects(&objects);

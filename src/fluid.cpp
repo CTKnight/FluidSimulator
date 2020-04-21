@@ -15,7 +15,7 @@ Fluid::Fluid(unique_ptr<vector<Triad>> &&particle_positions): Fluid(std::move(pa
 Fluid::Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities
-): particleSphereMesh(4, 4), nsearch(0.01) {
+): nsearch(0.01) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
@@ -39,16 +39,6 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
                 vector<Vector3D> external_accelerations,
                 vector<CollisionObject *> *collision_objects) {
 
-}
-
-void Fluid::render(nanogui::GLShader &shader, const std::shared_ptr<FluidParameters> &cp) {
-  Vector3D position;
-  for (const auto &p: *this->particle_positions) {
-    position[0] = p[0];
-    position[1] = p[1];
-    position[2] = p[2];
-    particleSphereMesh.draw_sphere(shader, position, cp->particleRadius);
-  }
 }
 
 void Fluid::reset() {

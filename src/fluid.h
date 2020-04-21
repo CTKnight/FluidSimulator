@@ -10,7 +10,6 @@
 #include "CGL/misc.h"
 #include <CompactNSearch>
 #include "collision/collisionObject.h"
-#include "misc/sphere_drawing.h"
 
 using namespace CGL;
 using namespace std;
@@ -49,7 +48,11 @@ struct Fluid {
   void simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
                 vector<Vector3D> external_accelerations,
                 vector<CollisionObject *> *collision_objects);
-  void render(nanogui::GLShader &shader, const std::shared_ptr<FluidParameters> &cp);
+
+  const vector<Triad> &getParticlePositions() const {
+    return *particle_positions;
+  }
+
   void reset();
   // Fluid properties
 
@@ -63,7 +66,6 @@ private:
   vector<Triad> delta_p;
   vector<Triad> lambda;
 
-  Misc::SphereMesh particleSphereMesh;
   CompactNSearch::NeighborhoodSearch nsearch;
 };
 
