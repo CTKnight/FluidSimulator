@@ -71,33 +71,28 @@ link_directories(
 # Add executable
 #-------------------------------------------------------------------------------
 add_definitions(-D_USE_MATH_DEFINES)
+
 add_executable(fluidsim ${FLUIDSIM_VIEWER_SOURCE})
+target_link_libraries(fluidsim
+    CGL ${CGL_LIBRARIES}
+    nanogui ${NANOGUI_EXTRA_LIBS}
+    ${FREETYPE_LIBRARIES}
+    ${CMAKE_THREADS_INIT}
+    CompactNSearch
+)
+
 add_executable(nsearchDemo nsearchMain.cpp)
+target_link_libraries(nsearchDemo
+    CompactNSearch
+)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(fluidsim
-        CGL ${CGL_LIBRARIES}
-        nanogui ${NANOGUI_EXTRA_LIBS}
-        ${FREETYPE_LIBRARIES}
-        ${CMAKE_THREADS_INIT}
-        CompactNSearch
         OpenMP::OpenMP_CXX
     )
 
     target_link_libraries(nsearchDemo
-        CompactNSearch
         OpenMP::OpenMP_CXX
-    )
-else(OpenMP_CXX_FOUND)
-    target_link_libraries(fluidsim
-        CGL ${CGL_LIBRARIES}
-        nanogui ${NANOGUI_EXTRA_LIBS}
-        ${FREETYPE_LIBRARIES}
-        ${CMAKE_THREADS_INIT}
-        CompactNSearch
-    )
-    target_link_libraries(nsearchDemo
-        CompactNSearch
     )
 endif(OpenMP_CXX_FOUND)
 
