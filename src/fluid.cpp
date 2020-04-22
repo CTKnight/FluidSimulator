@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include <exception>
+#include <omp.h>
 
 #include "fluid.h"
 #include "collision/plane.h"
@@ -29,8 +30,8 @@ Fluid::Fluid(
   } else {
     auto velocities = make_unique<vector<Triad>>();
     velocities->resize(this->particle_positions->size());
-    std::array<CompactNSearch::Real, 3> defaultVelocity = {0.0, 0.0, 0.0};
-    std::fill(velocities->begin(), velocities->end(), defaultVelocity);
+    // Init to 0
+    memset(velocities->data(), 0, sizeof(Fluid::Triad)*n);
     this->particle_velocities = std::move(velocities);
   }
   this->particle_preditced_positions.resize(n);
@@ -48,6 +49,8 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   const auto n = particle_positions.size();
   auto &particle_velocities = triadAsVector3D(*this->particle_velocities);
   auto &preditced_positions = triadAsVector3D(this->particle_preditced_positions);
+
+  #pragma omp parallel for num_threads(4)
   for (int i = 0; i < n; i++) {
     for (const auto &acc: external_accelerations) {
       particle_velocities[i] += acc * delta_t;

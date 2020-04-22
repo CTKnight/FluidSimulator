@@ -160,10 +160,11 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   // TODO: debug dummy
   std::cout << "loadObjectsFromFile: Dummy\n";
   auto position = make_unique<vector<Fluid::Triad>>();
-  position->reserve(1000);
-  for (auto i = 0; i < 10; i++) {
-    for (auto j = 0; j < 10; j++) {
-      for (auto k = 0; k < 10; k++) {
+  int dimx = 20;
+  position->reserve(pow(dimx, 3));
+  for (auto i = 0; i < dimx; i++) {
+    for (auto j = 0; j < dimx; j++) {
+      for (auto k = 0; k < dimx; k++) {
         position->emplace_back(Fluid::Triad{i/100., j/100., k/100.});
       }
     }
@@ -356,8 +357,8 @@ int main(int argc, char **argv) {
   
   int c;
   
-  int sphere_num_lat = 5;
-  int sphere_num_lon = 5;
+  int sphere_num_lat = 3;
+  int sphere_num_lon = 3;
   
   std::string file_to_load_from;
   bool file_specified = false;
@@ -394,7 +395,7 @@ int main(int argc, char **argv) {
         break;
       }
       case 'p': {
-        
+
         break;
       }
       case 'i': {
@@ -429,6 +430,10 @@ int main(int argc, char **argv) {
   glfwSetErrorCallback(error_callback);
 
   createGLContexts();
+
+  #ifdef _OPENMP
+    cout << "OpenMP enabled" << endl;
+  # endif
 
   // Initialize the ClothSimulator object
   auto renderer = std::make_shared<OpenGLRenderder>(Misc::SphereMesh(sphere_num_lat, sphere_num_lon));

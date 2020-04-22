@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
 
 # Cloth simulation source
 set(FLUIDSIM_VIEWER_SOURCE
@@ -80,6 +80,25 @@ target_link_libraries(fluidsim
     ${CMAKE_THREADS_INIT}
     CompactNSearch
 )
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(fluidsim
+        CGL ${CGL_LIBRARIES}
+        nanogui ${NANOGUI_EXTRA_LIBS}
+        ${FREETYPE_LIBRARIES}
+        ${CMAKE_THREADS_INIT}
+        CompactNSearch
+        OpenMP::OpenMP_CXX
+    )
+else(OpenMP_CXX_FOUND)
+    target_link_libraries(fluidsim
+        CGL ${CGL_LIBRARIES}
+        nanogui ${NANOGUI_EXTRA_LIBS}
+        ${FREETYPE_LIBRARIES}
+        ${CMAKE_THREADS_INIT}
+        CompactNSearch
+    )
+endif(OpenMP_CXX_FOUND)
 
 
 add_executable(nsearchDemo nsearchMain.cpp)

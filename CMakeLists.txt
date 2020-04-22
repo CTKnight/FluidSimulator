@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
 project(FluidSim)
 
 #-------------------------------------------------------------------------------
@@ -106,7 +106,6 @@ if(UNIX AND NOT APPLE)
         set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -g")
     else(BUILD_DEBUG)
         set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -O3")
-        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -fopenmp")
     endif(BUILD_DEBUG)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_CXX_FLAGS}")
@@ -200,6 +199,9 @@ find_package(Threads REQUIRED)
 if(NOT WIN32)
   find_package(Freetype REQUIRED)
 endif()
+
+# OpenMP
+find_package(OpenMP)
 
 # Nearest neighbors
 set(BUILD_DEMO            OFF CACHE BOOL " " FORCE)

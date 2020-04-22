@@ -1,4 +1,5 @@
 #include <cmath>
+#include <chrono>
 #include <glad/glad.h>
 
 #include <CGL/vector3D.h>
@@ -243,9 +244,13 @@ void ClothSimulator::drawContents() {
   if (!is_paused) {
     vector<Vector3D> external_accelerations = {gravity};
 
+    const auto start = chrono::high_resolution_clock::now(); 
     for (int i = 0; i < simulation_steps; i++) {
       fluid->simulate(frames_per_sec, simulation_steps, fp, external_accelerations, collision_objects);
     }
+    const auto end = chrono::high_resolution_clock::now();
+    const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
+    cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " micro sec." << endl; 
   }
 
   // Bind the active shader
