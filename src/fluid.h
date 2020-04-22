@@ -69,4 +69,7 @@ private:
   CompactNSearch::NeighborhoodSearch nsearch;
 };
 
+inline Vector3D &triadAsVector3D(Fluid::Triad &triad);
+inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads);
+
 #endif /* FLUID_H */

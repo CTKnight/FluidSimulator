@@ -19,9 +19,10 @@ Fluid::Fluid(
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
+  const auto n = particle_positions->size();
   this->particle_positions  = std::move(particle_positions);
   if (particle_velocities != nullptr) {
-    if (particle_positions->size() != particle_velocities->size()) {
+    if (n != particle_velocities->size()) {
       throw std::runtime_error("particle_positions->size()  != particle_velocities->size()!");
     }
     this->particle_velocities = std::move(particle_velocities);
@@ -32,15 +33,38 @@ Fluid::Fluid(
     std::fill(velocities->begin(), velocities->end(), defaultVelocity);
     this->particle_velocities = std::move(velocities);
   }
+  this->particle_preditced_positions.resize(n);
+  this->delta_p.resize(n);
+  this->lambda.resize(n);
+
   // TODO: Init nsearch
 }
 
 void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
                 vector<Vector3D> external_accelerations,
                 vector<CollisionObject *> *collision_objects) {
-
+  double delta_t = 1.0f / frames_per_sec / simulation_steps;
+  auto &particle_positions = triadAsVector3D(*this->particle_positions);
+  const auto n = particle_positions.size();
+  auto &particle_velocities = triadAsVector3D(*this->particle_velocities);
+  auto &preditced_positions = triadAsVector3D(this->particle_preditced_positions);
+  for (int i = 0; i < n; i++) {
+    for (const auto &acc: external_accelerations) {
+      particle_velocities[i] += acc * delta_t;
+    }
+    preditced_positions[i] = particle_positions[i] + particle_velocities[i] * delta_t;
+  }
+  memcpy(particle_positions.data(), preditced_positions.data(), sizeof(Fluid::Triad)*n);
 }
 
 void Fluid::reset() {
 
+}
+
+inline Vector3D &triadAsVector3D(Fluid::Triad &triad) {
+  return reinterpret_cast<Vector3D &>(triad);
+}
+
+inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads) {
+  return reinterpret_cast<vector<Vector3D> &>(triads);
 }

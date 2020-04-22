@@ -362,7 +362,7 @@ int main(int argc, char **argv) {
   std::string file_to_load_from;
   bool file_specified = false;
   
-  while ((c = getopt (argc, argv, "f:r:a:o:")) != -1) {
+  while ((c = getopt (argc, argv, "f:r:a:o:p:i")) != -1) {
     switch (c) {
       case 'f': {
         file_to_load_from = optarg;
@@ -391,6 +391,13 @@ int main(int argc, char **argv) {
           arg_int = 1;
         }
         sphere_num_lon = arg_int;
+        break;
+      }
+      case 'p': {
+        
+        break;
+      }
+      case 'i': {
         break;
       }
       default: {
