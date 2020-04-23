@@ -15,16 +15,17 @@ enum ShaderTypeHint { WIREFRAME = 0, NORMALS = 1, PHONG = 2 };
 
 class ClothSimulator {
 public:
-  ClothSimulator(std::string project_root, Screen *screen, const shared_ptr<ObjectRenderer> &renderer);
+  ClothSimulator(bool withoutWindow = false);
   ~ClothSimulator();
 
-  void init();
+  void initWindow(std::string project_root, Screen *screen, const shared_ptr<ObjectRenderer> &renderer);
 
   void loadFluid(std::shared_ptr<Fluid> fluid);
   void loadFluidParameters(std::shared_ptr<FluidParameters> cp);
   void loadCollisionObjects(vector<CollisionObject *> *objects);
   virtual bool isAlive();
   virtual void drawContents();
+  virtual void simulate();
 
   // Screen events
 
@@ -34,6 +35,10 @@ public:
   virtual bool dropCallbackEvent(int count, const char **filenames);
   virtual bool scrollCallbackEvent(double x, double y);
   virtual bool resizeCallbackEvent(int width, int height);
+
+  virtual int getFps() {
+    return this->frames_per_sec;
+  }
 
 private:
   virtual void initGUI(Screen *screen);
@@ -137,6 +142,8 @@ private:
   bool is_alive = true;
 
   Vector2i default_window_size = Vector2i(1024, 800);
+
+  bool withoutWindow = false;
 };
 
 struct UserShader {

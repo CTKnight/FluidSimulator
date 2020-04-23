@@ -50,7 +50,7 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   auto &particle_velocities = triadAsVector3D(*this->particle_velocities);
   auto &preditced_positions = triadAsVector3D(this->particle_preditced_positions);
 
-  #pragma omp parallel for num_threads(4)
+  #pragma omp parallel for num_threads(4) 
   for (int i = 0; i < n; i++) {
     for (const auto &acc: external_accelerations) {
       particle_velocities[i] += acc * delta_t;

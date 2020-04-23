@@ -155,15 +155,9 @@ void ClothSimulator::load_shaders() {
   }
 }
 
-ClothSimulator::ClothSimulator(std::string project_root, Screen *screen, const shared_ptr<ObjectRenderer> &renderer)
-: m_project_root(project_root), renderer(renderer) {
-  this->screen = screen;
-  
-  this->load_shaders();
-  this->load_textures();
+ClothSimulator::ClothSimulator(bool withoutWindow)
+: withoutWindow(withoutWindow) {
 
-  glEnable(GL_PROGRAM_POINT_SIZE);
-  glEnable(GL_DEPTH_TEST);
 }
 
 ClothSimulator::~ClothSimulator() {
@@ -189,9 +183,22 @@ void ClothSimulator::loadCollisionObjects(vector<CollisionObject *> *objects) { 
  * Initializes the cloth simulation and spawns a new thread to separate
  * rendering from simulation.
  */
-void ClothSimulator::init() {
+void ClothSimulator::initWindow(std::string project_root, Screen *screen, const shared_ptr<ObjectRenderer> &renderer) {
 
+  if (withoutWindow) {
+    throw std::runtime_error("Don't call init if no window needed.\n");
+  }
   // Initialize GUI
+  this->screen = screen;
+  this->renderer = renderer;
+  this->m_project_root = project_root;
+  
+  this->load_shaders();
+  this->load_textures();
+
+  glEnable(GL_PROGRAM_POINT_SIZE);
+  glEnable(GL_DEPTH_TEST);
+
   screen->setSize(default_window_size);
   initGUI(screen);
 
@@ -238,10 +245,7 @@ void ClothSimulator::init() {
 
 bool ClothSimulator::isAlive() { return is_alive; }
 
-void ClothSimulator::drawContents() {
-  glEnable(GL_DEPTH_TEST);
-
-  if (!is_paused) {
+void ClothSimulator::simulate() {
     vector<Vector3D> external_accelerations = {gravity};
 
     const auto start = chrono::high_resolution_clock::now(); 
@@ -251,6 +255,13 @@ void ClothSimulator::drawContents() {
     const auto end = chrono::high_resolution_clock::now();
     const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
     cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " micro sec." << endl; 
+}
+
+void ClothSimulator::drawContents() {
+  glEnable(GL_DEPTH_TEST);
+
+  if (!is_paused) {
+    this->simulate();
   }
 
   // Bind the active shader

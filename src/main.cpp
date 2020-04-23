@@ -147,6 +147,9 @@ void usageError(const char *binaryName) {
   printf("                     Automatically searched for by default.\n");
   printf("  -a     <INT>       Sphere vertices latitude direction.\n");
   printf("  -o     <INT>       Sphere vertices longitude direction.\n");
+  printf("  -p     <INT>       Output particle data.\n");
+  printf("  -i     <INT>       Input particle data.\n");
+  printf("  -n     <INT>       off for no window.\n");
   printf("\n");
   exit(-1);
 }
@@ -160,7 +163,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   // TODO: debug dummy
   std::cout << "loadObjectsFromFile: Dummy\n";
   auto position = make_unique<vector<Fluid::Triad>>();
-  int dimx = 20;
+  int dimx = 30;
   position->reserve(pow(dimx, 3));
   for (auto i = 0; i < dimx; i++) {
     for (auto j = 0; j < dimx; j++) {
@@ -362,8 +365,12 @@ int main(int argc, char **argv) {
   
   std::string file_to_load_from;
   bool file_specified = false;
+
+  std::string particle_file_to_input;
+  std::string particle_file_to_output;
+  bool withoutWindow = false;
   
-  while ((c = getopt (argc, argv, "f:r:a:o:p:i")) != -1) {
+  while ((c = getopt (argc, argv, "f:r:a:o:p:i:n")) != -1) {
     switch (c) {
       case 'f': {
         file_to_load_from = optarg;
@@ -395,10 +402,15 @@ int main(int argc, char **argv) {
         break;
       }
       case 'p': {
-
+        particle_file_to_output = optarg;
         break;
       }
       case 'i': {
+        particle_file_to_input = optarg;
+        break;
+      }
+      case 'n': {
+        withoutWindow = true;
         break;
       }
       default: {
@@ -415,6 +427,10 @@ int main(int argc, char **argv) {
     std::cout << "Loading files starting from: " << project_root << std::endl;
   }
 
+  #ifdef _OPENMP
+    cout << "OpenMP enabled" << endl;
+  # endif
+
   if (!file_specified) { // No arguments, default initialization
     std::stringstream def_fname;
     def_fname << project_root;
@@ -423,53 +439,65 @@ int main(int argc, char **argv) {
   }
   
   bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects, sphere_num_lat, sphere_num_lon);
+  
   if (!success) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
   }
 
-  glfwSetErrorCallback(error_callback);
-
-  createGLContexts();
-
-  #ifdef _OPENMP
-    cout << "OpenMP enabled" << endl;
-  # endif
 
   // Initialize the ClothSimulator object
-  auto renderer = std::make_shared<OpenGLRenderder>(Misc::SphereMesh(sphere_num_lat, sphere_num_lon));
-  app = new ClothSimulator(project_root, screen, renderer);
+
+  app = new ClothSimulator(withoutWindow);
   app->loadFluid(fluid);
   app->loadFluidParameters(fp);
   app->loadCollisionObjects(&objects);
-  app->init();
 
-  // Call this after all the widgets have been defined
+  if (withoutWindow) {
 
-  screen->setVisible(true);
-  screen->performLayout();
+    const auto fps = app->getFps();
+    for (int t = 0; t < 10; t++) {
+      for (int f = 0; f < fps; f++) {
+        app->simulate();
+      }
+    }
+  } else {
+    glfwSetErrorCallback(error_callback);
 
-  // Attach callbacks to the GLFW window
+    createGLContexts();
 
-  setGLFWCallbacks();
+    auto renderer = std::make_shared<OpenGLRenderder>(Misc::SphereMesh(sphere_num_lat, sphere_num_lon));
+    app->initWindow(project_root, screen, renderer);
 
-  while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
+    // Call this after all the widgets have been defined
 
-    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    screen->setVisible(true);
+    screen->performLayout();
 
-    app->drawContents();
+    // Attach callbacks to the GLFW window
 
-    // Draw nanogui
-    screen->drawContents();
-    screen->drawWidgets();
+    setGLFWCallbacks();
 
-    glfwSwapBuffers(window);
+    while (!glfwWindowShouldClose(window)) {
+      glfwPollEvents();
 
-    if (!app->isAlive()) {
-      glfwSetWindowShouldClose(window, 1);
+      glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      app->drawContents();
+
+      // Draw nanogui
+      screen->drawContents();
+      screen->drawWidgets();
+
+      glfwSwapBuffers(window);
+
+      if (!app->isAlive()) {
+        glfwSetWindowShouldClose(window, 1);
+      }
     }
   }
+
+
 
   return 0;
 }
