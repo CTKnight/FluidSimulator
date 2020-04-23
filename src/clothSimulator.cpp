@@ -257,10 +257,10 @@ void ClothSimulator::simulate() {
     cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " micro sec." << endl; 
 }
 
-void ClothSimulator::drawContents() {
+void ClothSimulator::drawContents(bool shouldSimulate) {
   glEnable(GL_DEPTH_TEST);
 
-  if (!is_paused) {
+  if (shouldSimulate && !isPaused()) {
     this->simulate();
   }
 

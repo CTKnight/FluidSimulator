@@ -163,7 +163,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   // TODO: debug dummy
   std::cout << "loadObjectsFromFile: Dummy\n";
   auto position = make_unique<vector<Fluid::Triad>>();
-  int dimx = 30;
+  int dimx = 10;
   position->reserve(pow(dimx, 3));
   for (auto i = 0; i < dimx; i++) {
     for (auto j = 0; j < dimx; j++) {
@@ -366,8 +366,8 @@ int main(int argc, char **argv) {
   std::string file_to_load_from;
   bool file_specified = false;
 
-  std::string particle_file_to_input;
-  std::string particle_file_to_output;
+  std::string particle_filename_to_input;
+  std::string particle_filename_to_output;
   bool withoutWindow = false;
   
   while ((c = getopt (argc, argv, "f:r:a:o:p:i:n")) != -1) {
@@ -402,11 +402,11 @@ int main(int argc, char **argv) {
         break;
       }
       case 'p': {
-        particle_file_to_output = optarg;
+        particle_filename_to_output = optarg;
         break;
       }
       case 'i': {
-        particle_file_to_input = optarg;
+        particle_filename_to_input = optarg;
         break;
       }
       case 'n': {
@@ -444,6 +444,20 @@ int main(int argc, char **argv) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
   }
 
+  ofstream particle_file_to_output;
+  bool particle_file_to_output_good = false;
+  if (particle_filename_to_output.length() != 0) {
+    particle_file_to_output.open(particle_filename_to_output);
+    particle_file_to_output_good = particle_file_to_output.good();
+  }
+  
+  ifstream particle_file_to_input;
+  bool particle_file_to_input_good = false;
+  if (particle_filename_to_input.length() != 0) {
+    particle_file_to_input.open(particle_filename_to_input);
+    particle_file_to_input_good = particle_file_to_input.good();
+    std::cout << "Replaying file: " << particle_filename_to_input << std::endl;
+  }
 
   // Initialize the ClothSimulator object
 
@@ -453,11 +467,27 @@ int main(int argc, char **argv) {
   app->loadCollisionObjects(&objects);
 
   if (withoutWindow) {
-
     const auto fps = app->getFps();
-    for (int t = 0; t < 10; t++) {
+    constexpr double duration = 1;
+    if (particle_file_to_output.good()) {
+      particle_file_to_output << 
+        "n " << fluid->getParticlePositions().size() << "\n" <<
+        "fps " << fps << "\n" <<
+        "duration " << duration << "\n"
+      ;
+    }
+    for (int t = 0; t < duration; t++) {
       for (int f = 0; f < fps; f++) {
         app->simulate();
+        // output per frame
+        if (particle_file_to_output.good()) {
+          const auto &particles = triadAsVector3D(fluid->getParticlePositions());
+          for (const auto &p: particles) {
+            particle_file_to_output << p << "\n";
+          }
+        } else {
+          throw std::runtime_error("particle_file_to_output is not good to write!");
+        }
       }
     }
   } else {
@@ -477,13 +507,27 @@ int main(int argc, char **argv) {
 
     setGLFWCallbacks();
 
+    int n, fps, duration;
+    std::string placeholder;
+    if (particle_file_to_input.good()) {
+      particle_file_to_input >> placeholder >> n >> placeholder >> fps >> placeholder >> duration;
+      std::getline(particle_file_to_input, placeholder);
+      fluid->getParticlePositions().resize(n);
+    }
+
     while (!glfwWindowShouldClose(window)) {
       glfwPollEvents();
 
       glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      app->drawContents();
+      if (!app->isPaused() && particle_file_to_input.good()) {
+        auto &particles = triadAsVector3D(fluid->getParticlePositions());
+        for (int i = 0; i < n; i++) {
+          particle_file_to_input >> particles[i];
+        }
+      }
+      app->drawContents(!particle_file_to_input_good);
 
       // Draw nanogui
       screen->drawContents();

@@ -68,6 +68,23 @@ inline Vector3D &triadAsVector3D(Fluid::Triad &triad) {
   return reinterpret_cast<Vector3D &>(triad);
 }
 
+inline const Vector3D &triadAsVector3D(const Fluid::Triad &triad) {
+  return reinterpret_cast<const Vector3D &>(triad);
+}
+
 inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads) {
   return reinterpret_cast<vector<Vector3D> &>(triads);
+}
+
+inline const vector<Vector3D> &triadAsVector3D(const vector<Fluid::Triad> &triads) {
+  return reinterpret_cast<const vector<Vector3D> &>(triads);
+}
+
+std::istream& operator>>(std::istream& is, Vector3D& v) {
+  string buffer;
+  char c;
+  std::getline(is, buffer);
+  std::stringstream ss(buffer);
+  ss >> c >> v.x >> c >> v.y >> c >> v.z;
+  return is;
 }

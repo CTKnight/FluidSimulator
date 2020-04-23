@@ -24,7 +24,10 @@ public:
   void loadFluidParameters(std::shared_ptr<FluidParameters> cp);
   void loadCollisionObjects(vector<CollisionObject *> *objects);
   virtual bool isAlive();
-  virtual void drawContents();
+  virtual bool isPaused() const {
+    return is_paused;
+  }
+  virtual void drawContents(bool shouldSimulate = true);
   virtual void simulate();
 
   // Screen events

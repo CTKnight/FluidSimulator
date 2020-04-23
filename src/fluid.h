@@ -49,6 +49,10 @@ struct Fluid {
                 vector<Vector3D> external_accelerations,
                 vector<CollisionObject *> *collision_objects);
 
+  vector<Triad> &getParticlePositions() {
+    return *particle_positions;
+  }
+
   const vector<Triad> &getParticlePositions() const {
     return *particle_positions;
   }
@@ -70,6 +74,10 @@ private:
 };
 
 inline Vector3D &triadAsVector3D(Fluid::Triad &triad);
+inline const Vector3D &triadAsVector3D(const Fluid::Triad &triad);
 inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads);
+inline const vector<Vector3D> &triadAsVector3D(const vector<Fluid::Triad> &triads);
+
+std::istream& operator>>(std::istream& os, Vector3D& v);
 
 #endif /* FLUID_H */
