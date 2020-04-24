@@ -4,7 +4,10 @@
 #include <dirent.h>
 #endif // WIN32
 
+#include <iomanip>
+#include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "file_utils.h"
 
@@ -34,6 +37,28 @@ bool list_files_in_directory(const std::string& dir_path, std::set<std::string>&
   
   // Success
   return true;
+}
+
+bool directory_exists(const std::string& dir_path) {
+    // Open directory
+  DIR* de_dir = opendir(dir_path.c_str());
+  
+  // Check we opened correctly
+  if (de_dir == NULL) {
+    return false;
+  }
+
+    // Don't forget to close
+  closedir(de_dir);
+  
+  // Success
+  return true;
+}
+
+std::string fluid_filename(const std::string& dir_path, int n) {
+  std::stringstream ss;
+  ss << dir_path << "/" << "fluid" << std::setfill('0') << std::setw(5) << n << ".vtk";
+  return ss.str();
 }
 
 bool split_filename(const std::string& filename, std::string& before_extension, std::string& extension) {

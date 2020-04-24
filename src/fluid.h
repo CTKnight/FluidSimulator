@@ -79,5 +79,9 @@ inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads);
 inline const vector<Vector3D> &triadAsVector3D(const vector<Fluid::Triad> &triads);
 
 std::istream& operator>>(std::istream& os, Vector3D& v);
+std::istream& operator>>(std::istream& is, Fluid::Triad& v);
+std::ostream& operator<<(std::ostream& os, const Fluid::Triad& v);
+std::istream& operator>>(std::istream& is, Fluid& fluid);
+std::ostream& operator<<(std::ostream& os, const Fluid& fluid);
 
 #endif /* FLUID_H */

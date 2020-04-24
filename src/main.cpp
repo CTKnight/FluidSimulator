@@ -5,12 +5,16 @@
 #include <stdlib.h>
 #ifdef _WIN32
 #include "misc/getopt.h" // getopt for windows
+#include <direct.h> // _mkdir
 #else
 #include <getopt.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 #include <unordered_set>
 #include <stdlib.h> // atoi for getopt inputs
+
 
 #include "CGL/CGL.h"
 #include "collision/plane.h"
@@ -147,8 +151,8 @@ void usageError(const char *binaryName) {
   printf("                     Automatically searched for by default.\n");
   printf("  -a     <INT>       Sphere vertices latitude direction.\n");
   printf("  -o     <INT>       Sphere vertices longitude direction.\n");
-  printf("  -p     <INT>       Output particle data.\n");
-  printf("  -i     <INT>       Input particle data.\n");
+  printf("  -p     <INT>       Output particle data folder.\n");
+  printf("  -i     <INT>       Input particle data folder.\n");
   printf("  -n     <INT>       off for no window.\n");
   printf("\n");
   exit(-1);
@@ -163,7 +167,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   // TODO: debug dummy
   std::cout << "loadObjectsFromFile: Dummy\n";
   auto position = make_unique<vector<Fluid::Triad>>();
-  int dimx = 10;
+  int dimx = 30;
   position->reserve(pow(dimx, 3));
   for (auto i = 0; i < dimx; i++) {
     for (auto j = 0; j < dimx; j++) {
@@ -366,8 +370,8 @@ int main(int argc, char **argv) {
   std::string file_to_load_from;
   bool file_specified = false;
 
-  std::string particle_filename_to_input;
-  std::string particle_filename_to_output;
+  std::string particle_foldername_to_input;
+  std::string particle_foldername_to_output;
   bool withoutWindow = false;
   
   while ((c = getopt (argc, argv, "f:r:a:o:p:i:n")) != -1) {
@@ -402,11 +406,11 @@ int main(int argc, char **argv) {
         break;
       }
       case 'p': {
-        particle_filename_to_output = optarg;
+        particle_foldername_to_output = optarg;
         break;
       }
       case 'i': {
-        particle_filename_to_input = optarg;
+        particle_foldername_to_input = optarg;
         break;
       }
       case 'n': {
@@ -444,19 +448,25 @@ int main(int argc, char **argv) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
   }
 
-  ofstream particle_file_to_output;
-  bool particle_file_to_output_good = false;
-  if (particle_filename_to_output.length() != 0) {
-    particle_file_to_output.open(particle_filename_to_output);
-    particle_file_to_output_good = particle_file_to_output.good();
+  bool particle_folder_to_output_good = false;
+  if (particle_foldername_to_output.length() != 0) {
+      int err;
+      // from https://stackoverflow.com/questions/23427804/cant-find-mkdir-function-in-dirent-h-for-windows
+      #ifdef _WIN32
+        err = _mkdir(particle_foldername_to_output.c_str());
+      #else 
+        err = mkdir(particle_foldername_to_output.c_str(),0755);
+      #endif
+    particle_folder_to_output_good = err == 0;
+    if (!particle_folder_to_output_good) {
+      std::cout << "Warn: can't mkdir at " << particle_foldername_to_output << ", will not write to it\n";
+    }
   }
   
-  ifstream particle_file_to_input;
-  bool particle_file_to_input_good = false;
-  if (particle_filename_to_input.length() != 0) {
-    particle_file_to_input.open(particle_filename_to_input);
-    particle_file_to_input_good = particle_file_to_input.good();
-    std::cout << "Replaying file: " << particle_filename_to_input << std::endl;
+  bool particle_folder_to_input_good = false;
+  if (particle_foldername_to_input.length() != 0) {
+    particle_folder_to_input_good = FileUtils::directory_exists(particle_foldername_to_input);
+    std::cout << "Replaying file in: " << particle_foldername_to_input << std::endl;
   }
 
   // Initialize the ClothSimulator object
@@ -469,25 +479,22 @@ int main(int argc, char **argv) {
   if (withoutWindow) {
     const auto fps = app->getFps();
     constexpr double duration = 1;
-    if (particle_file_to_output.good()) {
-      particle_file_to_output << 
-        "n " << fluid->getParticlePositions().size() << "\n" <<
-        "fps " << fps << "\n" <<
-        "duration " << duration << "\n"
-      ;
-    }
+    int n = 0;
     for (int t = 0; t < duration; t++) {
       for (int f = 0; f < fps; f++) {
         app->simulate();
         // output per frame
-        if (particle_file_to_output.good()) {
-          const auto &particles = triadAsVector3D(fluid->getParticlePositions());
-          for (const auto &p: particles) {
-            particle_file_to_output << p << "\n";
+        if (particle_folder_to_output_good) {
+          const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
+          ofstream particle_file_to_output(output_filename);
+          if (particle_file_to_output) {
+            particle_file_to_output << *fluid;
+          } else {
+            throw std::runtime_error(output_filename + string(" is not good to write!"));
           }
-        } else {
-          throw std::runtime_error("particle_file_to_output is not good to write!");
+          particle_file_to_output.close();
         }
+        n++;
       }
     }
   } else {
@@ -506,28 +513,31 @@ int main(int argc, char **argv) {
     // Attach callbacks to the GLFW window
 
     setGLFWCallbacks();
-
-    int n, fps, duration;
-    std::string placeholder;
-    if (particle_file_to_input.good()) {
-      particle_file_to_input >> placeholder >> n >> placeholder >> fps >> placeholder >> duration;
-      std::getline(particle_file_to_input, placeholder);
-      fluid->getParticlePositions().resize(n);
+    int n = 0;
+    int max_n = 0;
+    if (particle_folder_to_input_good) {
+      std::set<string> tmp;
+      FileUtils::list_files_in_directory(particle_foldername_to_input, tmp);
+      max_n = tmp.size();
     }
-
     while (!glfwWindowShouldClose(window)) {
       glfwPollEvents();
 
       glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      if (!app->isPaused() && particle_file_to_input.good()) {
-        auto &particles = triadAsVector3D(fluid->getParticlePositions());
-        for (int i = 0; i < n; i++) {
-          particle_file_to_input >> particles[i];
+      if (!app->isPaused() && particle_folder_to_input_good && n < max_n) {
+        const auto input_filename = FileUtils::fluid_filename(particle_foldername_to_input, n);
+        ifstream particle_file_to_input(input_filename);
+        if (particle_file_to_input) {
+          particle_file_to_input >> *fluid;
+          n++;
+        } else {
+          std::cout << "Input file: " << input_filename << " not good to read.\n";
         }
+        particle_file_to_input.close();
       }
-      app->drawContents(!particle_file_to_input_good);
+      app->drawContents(!particle_folder_to_input_good);
 
       // Draw nanogui
       screen->drawContents();
