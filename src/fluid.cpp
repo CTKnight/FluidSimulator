@@ -18,12 +18,12 @@ Fluid::Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities,
     double h
-): nsearch(h) {
+): nsearch(h, true) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
   const auto n = particle_positions->size();
-  this->particle_positions  = std::move(particle_positions);
+  this->particle_positions = std::move(particle_positions);
   if (particle_velocities != nullptr) {
     if (n != particle_velocities->size()) {
       throw std::runtime_error("particle_positions->size()  != particle_velocities->size()!");
@@ -41,6 +41,12 @@ Fluid::Fluid(
   this->lambda.resize(n);
 
   // TODO: Init nsearch
+  nsearch.add_point_set(
+    this->particle_positions->front().data(), 
+    this->particle_positions->size(), true, true
+  );
+  nsearch.find_neighbors();
+	neighbor_search_results.resize(n);
 }
 
 void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
@@ -51,14 +57,50 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   const auto n = particle_positions.size();
   auto &particle_velocities = triadAsVector3D(*this->particle_velocities);
   auto &preditced_positions = triadAsVector3D(this->particle_preditced_positions);
+  auto &delta_p = triadAsVector3D(this->delta_p);
+  const auto damping = cp->damping;
+  const auto solverIterations = cp->solverIterations;
 
   #pragma omp parallel for num_threads(4) 
   for (int i = 0; i < n; i++) {
+    // line 2: apply forces
     for (const auto &acc: external_accelerations) {
       particle_velocities[i] += acc * delta_t;
     }
-    preditced_positions[i] = particle_positions[i] + particle_velocities[i] * delta_t;
+    // line 3: predict positions
+    preditced_positions[i] += particle_velocities[i] * delta_t;
   }
+
+  // update nsearch
+  nsearch.find_neighbors();
+  for (int i = 0; i < n; i++) {
+    // line 6: find neighboring particles
+    neighbor_search_results[i].clear();
+    nsearch.find_neighbors(0, i, neighbor_search_results[i]);
+  }
+
+  for (int iter = 0; iter < solverIterations; iter++) {
+    for (int i = 0; i < n; i++) {
+      // line 10: calculate lambda
+    }
+    for (int i = 0; i < n; i++) {
+      // line 13: calculate delta p_i
+      // line 14: collision detection and response
+    }
+    for (int i = 0; i < n; i++) {
+      // line 17: update position
+      preditced_positions[i] += delta_p[i];
+    }
+  }
+
+  for (int i = 0; i < n; i++) {
+    // line 21: update velocity
+    particle_velocities[i] = (preditced_positions[i] - particle_positions[i]) / delta_t;
+
+    // line 22: vorticity confinement and XSPH viscosity
+  }
+
+  // line 23: update position
   memcpy(particle_positions.data(), preditced_positions.data(), sizeof(Fluid::Triad)*n);
 }
 
