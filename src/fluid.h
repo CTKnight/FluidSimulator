@@ -15,25 +15,25 @@ using namespace CGL;
 using namespace std;
 
 struct FluidParameters {
-  FluidParameters() {}
+  FluidParameters(): FluidParameters(1000, 0.001, 0.1) {}
   FluidParameters(
-    double damping,
     double density,
-    double ks,
+    double particle_mass,
+    double damping,
     double particleRadius = 0.05)
-      :damping(damping), density(density), ks(ks), particleRadius(particleRadius) {}
+      : density(density), particle_mass(particle_mass), damping(damping), particleRadius(particleRadius) {}
   ~FluidParameters() {}
 
   // Global simulation parameters
 
-
   double damping;
-
-  // Mass-spring parameters
+  double particle_mass;
+  // unit: kg/m^3
   double density;
-  double ks;
 
   // render parameters
+
+  // unit: m
   double particleRadius;
 };
 
@@ -42,7 +42,8 @@ struct Fluid {
   Fluid(unique_ptr<vector<Triad>> &&particle_positions);
   Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
-    unique_ptr<vector<Triad>> &&particle_velocities
+    unique_ptr<vector<Triad>> &&particle_velocities,
+    double h = 0.01
   );
   ~Fluid() = default;
   void simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,

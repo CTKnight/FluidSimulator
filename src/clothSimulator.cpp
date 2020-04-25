@@ -503,17 +503,17 @@ void ClothSimulator::initGUI(Screen *screen) {
     fb->setSpinnable(true);
     fb->setCallback([this](float value) { fp->density = (double)(value * 10); });
 
-    new Label(panel, "ks :", "sans-bold");
+    new Label(panel, "particleRadius :", "sans-bold");
 
     fb = new FloatBox<double>(panel);
     fb->setEditable(true);
     fb->setFixedSize(Vector2i(100, 20));
     fb->setFontSize(14);
-    fb->setValue(fp->ks);
-    fb->setUnits("N/m");
+    fb->setValue(fp->particleRadius);
+    fb->setUnits("m");
     fb->setSpinnable(true);
     fb->setMinValue(0);
-    fb->setCallback([this](float value) { fp->ks = value; });
+    fb->setCallback([this](float value) { fp->particleRadius = value; });
   }
 
   // Simulation constants

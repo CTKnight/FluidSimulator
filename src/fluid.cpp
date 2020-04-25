@@ -16,8 +16,9 @@ Fluid::Fluid(unique_ptr<vector<Triad>> &&particle_positions): Fluid(std::move(pa
 
 Fluid::Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
-    unique_ptr<vector<Triad>> &&particle_velocities
-): nsearch(0.01) {
+    unique_ptr<vector<Triad>> &&particle_velocities,
+    double h
+): nsearch(h) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }

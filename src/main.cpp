@@ -164,22 +164,8 @@ void incompleteObjectError(const char *object, const char *attribute) {
 }
 
 bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<FluidParameters> &fp, vector<CollisionObject *>* objects, int sphere_num_lat, int sphere_num_lon) {
-  // TODO: debug dummy
-  std::cout << "loadObjectsFromFile: Dummy\n";
-  auto position = make_unique<vector<Fluid::Triad>>();
-  int dimx = 30;
-  position->reserve(pow(dimx, 3));
-  for (auto i = 0; i < dimx; i++) {
-    for (auto j = 0; j < dimx; j++) {
-      for (auto k = 0; k < dimx; k++) {
-        position->emplace_back(Fluid::Triad{i/100., j/100., k/100.});
-      }
-    }
-  }
-  fp = make_shared<FluidParameters>(1,1,1);
-  fp->particleRadius = 0.005;
-  fluid = make_shared<Fluid>(std::move(position));
-  return true;
+  std::cout << "loadObjectsFromFile: " << filename << "\n";
+
   // Read JSON from file
   ifstream i(filename);
   if (!i.good()) {
@@ -204,120 +190,65 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
 
     // Parse object depending on type (cloth, sphere, or plane)
     if (key == FLUID) {
-      // Cloth
-      double width, height;
-      int num_width_points, num_height_points;
-      float thickness;
-      e_orientation orientation;
-      vector<vector<int>> pinned;
-
-      auto it_width = object.find("width");
-      if (it_width != object.end()) {
-        width = *it_width;
-      } else {
-        incompleteObjectError("cloth", "width");
+      double particle_mass = object["particle_mass"];
+      double density = object["density"];
+      double cube_size_per_particle = 1. / pow(density/particle_mass, 1./3.);
+      auto shape = object["shape"];
+      if (!shape.is_array()) {
+        throw std::runtime_error("Fluid shape should be an array");
       }
 
-      auto it_height = object.find("height");
-      if (it_height != object.end()) {
-        height = *it_height;
-      } else {
-        incompleteObjectError("cloth", "height");
-      }
-
-      auto it_num_width_points = object.find("num_width_points");
-      if (it_num_width_points != object.end()) {
-        num_width_points = *it_num_width_points;
-      } else {
-        incompleteObjectError("cloth", "num_width_points");
-      }
-
-      auto it_num_height_points = object.find("num_height_points");
-      if (it_num_height_points != object.end()) {
-        num_height_points = *it_num_height_points;
-      } else {
-        incompleteObjectError("cloth", "num_height_points");
-      }
-
-      auto it_thickness = object.find("thickness");
-      if (it_thickness != object.end()) {
-        thickness = *it_thickness;
-      } else {
-        incompleteObjectError("cloth", "thickness");
-      }
-
-      auto it_orientation = object.find("orientation");
-      if (it_orientation != object.end()) {
-        orientation = *it_orientation;
-      } else {
-        incompleteObjectError("cloth", "orientation");
-      }
-
-      auto it_pinned = object.find("pinned");
-      if (it_pinned != object.end()) {
-        vector<json> points = *it_pinned;
-        for (auto pt : points) {
-          vector<int> point = pt;
-          pinned.push_back(point);
+      unique_ptr<vector<Fluid::Triad>> particles = make_unique<vector<Fluid::Triad>>();
+      for (const auto &el: shape) {
+        string type = el["type"];
+        if (type == "cube") {
+          vector<double> origin = el["origin"];
+          vector<double> size = el["size"];
+          for (double i = origin[0]; i < origin[0] + size[0]; i += cube_size_per_particle) {
+            for (double j = origin[1]; j < origin[1] + size[1]; j += cube_size_per_particle) {
+              for (double k = origin[2]; k < origin[2] + size[2]; k += cube_size_per_particle) {
+                particles->emplace_back(Fluid::Triad{i, j, k});
+              }
+            }
+          }
+        } else if (type == "sphere") {
+          vector<double> origin = el["origin"];
+          double radius = el["radius"];
+          double r2 = pow(radius, 2);
+          for (double i = origin[0]-radius; i < origin[0]+radius; i += cube_size_per_particle) {
+            for (double j = origin[1]-radius; j < origin[1]+radius; j += cube_size_per_particle) {
+              for (double k = origin[2]-radius; k < origin[2]+radius; k += cube_size_per_particle) {
+                if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
+                  particles->emplace_back(Fluid::Triad{i, j, k});
+                }
+              }
+            }
+          }
+        } else if (type == "file") {
+          string path = el["path"];
+          // TODO
+        } else {
+          throw std::runtime_error(string("Invalid fluid.shape type: ") + type);
         }
       }
-
+      fluid = make_shared<Fluid>(std::move(particles));
+      fp = make_shared<FluidParameters>(density, particle_mass, 0.1, 0.005);
       // Cloth parameters
-      double damping, density, ks;
 
-      auto it_damping = object.find("damping");
-      if (it_damping != object.end()) {
-        damping = *it_damping;
-      } else {
-        incompleteObjectError("cloth", "damping");
-      }
-
-      auto it_density = object.find("density");
-      if (it_density != object.end()) {
-        density = *it_density;
-      } else {
-        incompleteObjectError("cloth", "density");
-      }
-
-      auto it_ks = object.find("ks");
-      if (it_ks != object.end()) {
-        ks = *it_ks;
-      } else {
-        incompleteObjectError("cloth", "ks");
-      }
-
-      fp->density = density;
-      fp->damping = damping;
-      fp->ks = ks;
     } else if (key == COLLISIONS) { // PLANE
-      Vector3D point, normal;
-      double friction = 0.0;
-
-      auto it_point = object.find("point");
-      if (it_point != object.end()) {
-        vector<double> vec_point = *it_point;
-        point = Vector3D(vec_point[0], vec_point[1], vec_point[2]);
-      } else {
-        incompleteObjectError("plane", "point");
+      if (!object.is_array()) {
+        throw std::runtime_error(COLLISIONS + std::string(" should be an array"));
       }
-
-      auto it_normal = object.find("normal");
-      if (it_normal != object.end()) {
-        vector<double> vec_normal = *it_normal;
-        normal = Vector3D(vec_normal[0], vec_normal[1], vec_normal[2]);
-      } else {
-        incompleteObjectError("plane", "normal");
+      for (const auto &el: object) {
+        const string type = el["type"];
+        vector<double> vec_point = el["point"];
+        vector<double> vec_normal = el["normal"];
+        double friction = el["friction"];
+        Vector3D point{vec_point[0], vec_point[1], vec_point[2]};
+        Vector3D normal{vec_normal[0], vec_normal[1], vec_normal[2]};
+        Plane *p = new Plane(point, normal, friction);
+        objects->push_back(p);
       }
-
-      auto it_friction = object.find("friction");
-      if (it_friction != object.end()) {
-        friction = *it_friction;
-      } else {
-        incompleteObjectError("plane", "friction");
-      }
-
-      Plane *p = new Plane(point, normal, friction);
-      objects->push_back(p);
     }
   }
 
