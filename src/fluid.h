@@ -10,6 +10,7 @@
 #include "CGL/misc.h"
 #include <CompactNSearch>
 #include "collision/collisionObject.h"
+#include "marchingCube.h"
 
 using namespace CGL;
 using namespace std;

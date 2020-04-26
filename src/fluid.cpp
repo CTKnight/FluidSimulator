@@ -15,7 +15,7 @@ using namespace std;
 Fluid::Fluid(unique_ptr<vector<Triad>> &&particle_positions): Fluid(std::move(particle_positions), nullptr) {}
 
 Fluid::Fluid(
-    unique_ptr<vector<Triad>> &&particle_positions, 
+    unique_ptr<vector<Triad>> &&particle_positions,
     unique_ptr<vector<Triad>> &&particle_velocities,
     double h
 ): nsearch(h) {
