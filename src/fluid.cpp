@@ -18,8 +18,9 @@ Fluid::Fluid(
     double h,
     double epsilon,
     double n,
-    double k
-): nsearch(h, true), h(h), epsilon(epsilon), n(n), k(k){
+    double k,
+    double c
+): nsearch(h, true), h(h), epsilon(epsilon), n(n), k(k), c(c) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
@@ -138,11 +139,32 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   }
 
   for (int i = 0; i < num_particle; i++) {
-    const auto &p_i = particle_positions[i];
     // line 21: update velocity
-    particle_velocities[i] = (preditced_positions[i] - p_i) / delta_t;
+    particle_velocities[i] = (preditced_positions[i] - particle_positions[i]) / delta_t;
+  }
+
+  for (int i = 0; i < num_particle; i++) {
+    const auto &p_i = particle_positions[i];
+    const auto &neighbors = neighbor_search_results[i][0];
 
     // line 22: vorticity confinement and XSPH viscosity
+    Vector3D f_vorticity;
+    Vector3D omega_i;
+    // Eq 17:
+    Vector3D V_xsph;
+    for (const auto &j: neighbors) {
+      const auto &p_j = particle_positions[j];
+      const auto &p_ij = p_i-p_j;
+      const auto &v_ij = particle_velocities[j] - particle_velocities[i];
+      // the smallest |p_ij| with h=0.1 gives >100 so c has to correct it to ~1
+      V_xsph  += v_ij * W_poly6(p_ij, h);
+      omega_i += cross(v_ij, W_spiky_gradient(p_ij, h)*p_ij);
+    }
+    // const auto &eta = ;
+    // const auto &N = eta.unit();
+    // f_vorticity = epsilon*cross(N, omega_i);
+    V_xsph *= c;
+    particle_velocities[i] += V_xsph + f_vorticity / particle_mass * delta_t;
   }
 
   // line 23: update position

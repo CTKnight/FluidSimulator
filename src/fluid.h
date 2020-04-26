@@ -48,7 +48,8 @@ struct Fluid {
     double h,
     double epsilon = 600,
     double n = 4,
-    double k = 0.0001
+    double k = 0.0001,
+    double c = 0.00007
   );
   ~Fluid() = default;
   void simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
@@ -79,6 +80,7 @@ private:
   double epsilon;
   double n;
   double k;
+  double c;
 
   CompactNSearch::NeighborhoodSearch nsearch;
   vector<vector<vector<unsigned int>>> neighbor_search_results;
@@ -96,35 +98,6 @@ inline double W_poly6(const Vector3D &r, double h) {
     return 0;
   }
   return 315 / (64 * PI * pow(h, 9)) * pow(h2 - r2, 3);
-}
-
-// https://www.wolframalpha.com/input/?i=derivative+of+315%2F%2864*PI*h%5E9%29*%28h%5E2-x%5E2%29%5E3+
-inline double W_poly6_gradient(const Vector3D &r_vec, double h) {
-  const auto r2 = r_vec.norm2();
-  const auto r = r_vec.norm();
-  const auto h2 = pow(h, 2);
-  if (r2 > h2) {
-    return 0;
-  }
-  return -945 * r * pow(h2 - r2, 2) / (32 * PI * pow(h, 9));
-}
-
-// https://www.wolframalpha.com/input/?i=+laplacian+315%2F%2864*PI*h%5E9%29*%28h%5E2-x%5E2%29%5E3++where+h+%3D++1
-inline double W_poly6_laplacian(const Vector3D &r_vec, double h) {
-  const auto r2 = r_vec.norm2();
-  const auto h2 = pow(h, 2);
-  if (r2 > h2) {
-    return 0;
-  }
-  return -945*(h2-5*r2)*(h2-r2) / (32 * PI * pow(h, 9));
-}
-
-inline double W_spiky(const Vector3D &r_vec, double h) {
-  const auto r = r_vec.norm();
-  if (r > h) {
-    return 0;
-  }
-  return 15 / (PI * pow(h, 6)) * pow(h - r, 3);
 }
 
 // https://www.wolframalpha.com/input/?i=gradient+15%2F%28PI*h%5E6%29*%28h-x%29%5E3
