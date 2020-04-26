@@ -46,7 +46,9 @@ struct Fluid {
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities,
     double h,
-    double epsilon = 600
+    double epsilon = 600,
+    double n = 4,
+    double k = 0.0001
   );
   ~Fluid() = default;
   void simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
@@ -75,6 +77,8 @@ private:
   vector<double> lambda;
   double h;
   double epsilon;
+  double n;
+  double k;
 
   CompactNSearch::NeighborhoodSearch nsearch;
   vector<vector<vector<unsigned int>>> neighbor_search_results;
