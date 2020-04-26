@@ -231,8 +231,8 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
           throw std::runtime_error(string("Invalid fluid.shape type: ") + type);
         }
       }
-      fluid = make_shared<Fluid>(std::move(particles));
-      fp = make_shared<FluidParameters>(density, particle_mass, 0.1, 0.005);
+      fluid = make_shared<Fluid>(std::move(particles), nullptr, 10 * cube_size_per_particle);
+      fp = make_shared<FluidParameters>(density, particle_mass, 0.1, 5, 0.005);
       // Cloth parameters
 
     } else if (key == COLLISIONS) { // PLANE

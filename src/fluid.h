@@ -21,8 +21,9 @@ struct FluidParameters {
     double density,
     double particle_mass,
     double damping,
+    int solverIterations = 5,
     double particleRadius = 0.05)
-      : density(density), particle_mass(particle_mass), damping(damping), particleRadius(particleRadius) {}
+      : density(density), particle_mass(particle_mass), damping(damping), solverIterations(solverIterations), particleRadius(particleRadius) {}
   ~FluidParameters() {}
 
   // Global simulation parameters
@@ -31,6 +32,7 @@ struct FluidParameters {
   double particle_mass;
   // unit: kg/m^3
   double density;
+  int solverIterations;
 
   // render parameters
 
@@ -73,6 +75,7 @@ private:
   vector<Triad> lambda;
 
   CompactNSearch::NeighborhoodSearch nsearch;
+  vector<vector<vector<unsigned int>>> neighbor_search_results;
 };
 
 inline Vector3D &triadAsVector3D(Fluid::Triad &triad);
