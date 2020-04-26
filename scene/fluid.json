@@ -32,16 +32,12 @@
     }
   ],
   "fluid": {
-    "particle_mass": 0.0005,
-    "density": 1000,
+    "particle_mass": 1,
+    "density": 6000,
     "shape": [{
         "type": "cube",
         "origin": [1, 1, 0],
-        "size": [0.1, 0.1, 0.1]
-      }, {
-        "type": "sphere",
-        "origin": [0, 1, 0],
-        "radius": 0.1
+        "size": [0.5, 0.5, 0.5]
       }, {
         "type": "file",
         "path": "./fluid00000.vtk"

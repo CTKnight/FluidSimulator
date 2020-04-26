@@ -231,7 +231,8 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
           throw std::runtime_error(string("Invalid fluid.shape type: ") + type);
         }
       }
-      fluid = make_shared<Fluid>(std::move(particles), nullptr, 10 * cube_size_per_particle);
+      // h: SPH Basics p16
+      fluid = make_shared<Fluid>(std::move(particles), nullptr, 0.1);
       fp = make_shared<FluidParameters>(density, particle_mass, 0.1, 5, 0.005);
       // Cloth parameters
 
@@ -411,6 +412,17 @@ int main(int argc, char **argv) {
     const auto fps = app->getFps();
     constexpr double duration = 1;
     int n = 0;
+    if (particle_folder_to_output_good) {
+      const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
+      ofstream particle_file_to_output(output_filename);
+      if (particle_file_to_output) {
+        particle_file_to_output << *fluid;
+      } else {
+        throw std::runtime_error(output_filename + string(" is not good to write!"));
+      }
+      particle_file_to_output.close();
+    }
+    n++;
     for (int t = 0; t < duration; t++) {
       for (int f = 0; f < fps; f++) {
         app->simulate();

@@ -12,13 +12,12 @@
 
 using namespace std;
 
-Fluid::Fluid(unique_ptr<vector<Triad>> &&particle_positions): Fluid(std::move(particle_positions), nullptr) {}
-
 Fluid::Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities,
-    double h
-): nsearch(h, true) {
+    double h,
+    double epsilon
+): nsearch(h, true), h(h), epsilon(epsilon) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
@@ -40,7 +39,7 @@ Fluid::Fluid(
   this->delta_p.resize(n);
   this->lambda.resize(n);
 
-  // TODO: Init nsearch
+  // Init nsearch
   nsearch.add_point_set(
     this->particle_positions->front().data(), 
     this->particle_positions->size(), true, true
@@ -60,15 +59,17 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   auto &delta_p = triadAsVector3D(this->delta_p);
   const auto damping = cp->damping;
   const auto solverIterations = cp->solverIterations;
+  const auto particle_mass = cp->particle_mass;
+  const auto density = cp->density;
 
-  #pragma omp parallel for num_threads(4) 
+  // #pragma omp parallel for num_threads(4) 
   for (int i = 0; i < n; i++) {
     // line 2: apply forces
     for (const auto &acc: external_accelerations) {
       particle_velocities[i] += acc * delta_t;
     }
     // line 3: predict positions
-    preditced_positions[i] += particle_velocities[i] * delta_t;
+    preditced_positions[i] = particle_positions[i] + particle_velocities[i] * delta_t;
   }
 
   // update nsearch
@@ -81,10 +82,51 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
 
   for (int iter = 0; iter < solverIterations; iter++) {
     for (int i = 0; i < n; i++) {
+      const auto &p_i = particle_positions[i];
       // line 10: calculate lambda
+      const auto &neighbors = neighbor_search_results[i][0];
+      // Eq 2
+      double rho_i = 0;
+      for (const auto &j: neighbors) {
+        const auto &p_j = particle_positions[j];
+        rho_i += W_poly6(p_i-p_j, h);
+      }
+      // add itself
+      // rho_i += W_poly6(p_i-p_i, h);
+      rho_i *= particle_mass;
+      // Eq 1
+      const auto C_i = rho_i / density - 1.;
+      double C_i_p_k_2_sum = 0;
+      // Eq 8
+      // if k = j
+      double C_i_p_k_j_2 = 0;
+      // if k = i
+      Vector3D C_i_p_k_i;
+      for (const auto &j: neighbors) {
+        const auto &p_j = particle_positions[j];
+        const auto W_spiky_gradient_i_j = W_spiky_gradient(p_i-p_j, h) * (p_i-p_j);
+        C_i_p_k_i += W_spiky_gradient_i_j;
+        C_i_p_k_j_2 += W_spiky_gradient_i_j.norm2();
+      }
+      C_i_p_k_2_sum += C_i_p_k_i.norm2();
+      C_i_p_k_2_sum /= pow(density, 2);
+      lambda[i] = - C_i / (C_i_p_k_2_sum+epsilon);
     }
     for (int i = 0; i < n; i++) {
+      const auto &p_i = particle_positions[i];
       // line 13: calculate delta p_i
+      const auto &neighbors = neighbor_search_results[i][0];
+      delta_p[i] = 0;
+      const auto lambda_i = lambda[i];
+      // Eq 12
+      for (const auto &j: neighbors) {
+        const auto &p_j = particle_positions[j];
+        // TODO: Eq 13
+        double s_corr = 0.;
+        delta_p[i] += (lambda_i+lambda[j]+s_corr) * W_spiky_gradient(p_i-p_j, h) 
+          * (p_i-p_j);
+      }
+      delta_p[i] /= density;
       // line 14: collision detection and response
     }
     for (int i = 0; i < n; i++) {
@@ -94,8 +136,9 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   }
 
   for (int i = 0; i < n; i++) {
+    const auto &p_i = particle_positions[i];
     // line 21: update velocity
-    particle_velocities[i] = (preditced_positions[i] - particle_positions[i]) / delta_t;
+    particle_velocities[i] = (preditced_positions[i] - p_i) / delta_t;
 
     // line 22: vorticity confinement and XSPH viscosity
   }
