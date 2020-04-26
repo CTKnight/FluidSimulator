@@ -82,9 +82,13 @@ Here is our plan with scheduling the following four weeks for our final project:
 
 - Week 4. Work on final report and presentation
 
-## Resources (see also: BUILDING.md)
+## Resources/Reference (see also: BUILDING.md)
 
-1. Slides explaining Position Based Fluid from http://www.cse.chalmers.se/edu/year/2018/course/TDA361/Advanced%20Computer%20Graphics/Position%20Based%20Fluids.pdf
-2. Paper from http://mmacklin.com/pbf_sig_preprint.pdf
-3. VTK file format https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
-4. CUDA https://docs.nvidia.com/cuda/
+1. Slides explaining Position Based Fluid @ http://www.cse.chalmers.se/edu/year/2018/course/TDA361/Advanced%20Computer%20Graphics/Position%20Based%20Fluids.pdf
+2. Paper @ http://mmacklin.com/pbf_sig_preprint.pdf
+3. VTK file format @ https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
+4. CUDA @ https://docs.nvidia.com/cuda/
+5. https://github.com/bwiberg/position-based-fluids by Benjamin Wiberg
+6. https://github.com/InteractiveComputerGraphics/SPlisHSPlasH by InteractiveComputerGraphics
+7. Eurographics Tutorial 2019 by InteractiveComputerGraphics @ https://interactivecomputergraphics.github.io/SPH-Tutorial/
+8. Stanford CS 348C assignment page (section Tuning parameters is super helpful!) @ http://graphics.stanford.edu/courses/cs348c/PA1_PBF2016/index.html
