@@ -36,6 +36,7 @@ using json = nlohmann::json;
 const string PLANE = "plane";
 const string FLUID = "fluid";
 const string COLLISIONS = "collisions";
+const string EXTERNAL_FORCES = "external_forces";
 
 const unordered_set<string> VALID_KEYS = {FLUID, COLLISIONS};
 
@@ -163,7 +164,7 @@ void incompleteObjectError(const char *object, const char *attribute) {
   exit(-1);
 }
 
-bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<FluidParameters> &fp, vector<CollisionObject *>* objects, int sphere_num_lat, int sphere_num_lon) {
+bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<FluidParameters> &fp, vector<CollisionObject *>* objects) {
   std::cout << "loadObjectsFromFile: " << filename << "\n";
 
   // Read JSON from file
@@ -174,87 +175,77 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   json j;
   i >> j;
 
-  // Loop over objects in scene
-  for (json::iterator it = j.begin(); it != j.end(); ++it) {
-    string key = it.key();
+  json object = j[FLUID];
+  double particle_mass = object["particle_mass"];
+  double density = object["density"];
+  double cube_size_per_particle = 1. / pow(density/particle_mass, 1./3.);
+  double h = object["h"];
+  double epsilon = object["epsilon"];
+  double n = object["n"];
+  double k = object["k"];
+  double c = object["c"];
+  auto shape = object["shape"];
+  if (!shape.is_array()) {
+    throw std::runtime_error("Fluid shape should be an array");
+  }
 
-    // Check that object is valid
-    unordered_set<string>::const_iterator query = VALID_KEYS.find(key);
-    if (query == VALID_KEYS.end()) {
-      cout << "Invalid scene object found: " << key << endl;
-      exit(-1);
-    }
-
-    // Retrieve object
-    json object = it.value();
-
-    // Parse object depending on type (cloth, sphere, or plane)
-    if (key == FLUID) {
-      double particle_mass = object["particle_mass"];
-      double density = object["density"];
-      double cube_size_per_particle = 1. / pow(density/particle_mass, 1./3.);
-      double h = object["h"];
-      double epsilon = object["epsilon"];
-      double n = object["n"];
-      double k = object["k"];
-      double c = object["c"];
-      auto shape = object["shape"];
-      if (!shape.is_array()) {
-        throw std::runtime_error("Fluid shape should be an array");
-      }
-
-      unique_ptr<vector<Fluid::Triad>> particles = make_unique<vector<Fluid::Triad>>();
-      for (const auto &el: shape) {
-        string type = el["type"];
-        if (type == "cube") {
-          vector<double> origin = el["origin"];
-          vector<double> size = el["size"];
-          for (double i = origin[0]; i < origin[0] + size[0]; i += cube_size_per_particle) {
-            for (double j = origin[1]; j < origin[1] + size[1]; j += cube_size_per_particle) {
-              for (double k = origin[2]; k < origin[2] + size[2]; k += cube_size_per_particle) {
-                particles->emplace_back(Fluid::Triad{i, j, k});
-              }
-            }
+  unique_ptr<vector<Fluid::Triad>> particles = make_unique<vector<Fluid::Triad>>();
+  for (const auto &el: shape) {
+    string type = el["type"];
+    if (type == "cube") {
+      vector<double> origin = el["origin"];
+      vector<double> size = el["size"];
+      for (double i = origin[0]; i < origin[0] + size[0]; i += cube_size_per_particle) {
+        for (double j = origin[1]; j < origin[1] + size[1]; j += cube_size_per_particle) {
+          for (double k = origin[2]; k < origin[2] + size[2]; k += cube_size_per_particle) {
+            particles->emplace_back(Fluid::Triad{i, j, k});
           }
-        } else if (type == "sphere") {
-          vector<double> origin = el["origin"];
-          double radius = el["radius"];
-          double r2 = pow(radius, 2);
-          for (double i = origin[0]-radius; i < origin[0]+radius; i += cube_size_per_particle) {
-            for (double j = origin[1]-radius; j < origin[1]+radius; j += cube_size_per_particle) {
-              for (double k = origin[2]-radius; k < origin[2]+radius; k += cube_size_per_particle) {
-                if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
-                  particles->emplace_back(Fluid::Triad{i, j, k});
-                }
-              }
-            }
-          }
-        } else if (type == "file") {
-          string path = el["path"];
-          // TODO
-        } else {
-          throw std::runtime_error(string("Invalid fluid.shape type: ") + type);
         }
       }
-      // h: SPH Basics p16
-      fluid = make_shared<Fluid>(std::move(particles), nullptr, h);
-      fp = make_shared<FluidParameters>(density, particle_mass, 0.1, h, epsilon, n, k, c);
-      // Cloth parameters
+    } else if (type == "sphere") {
+      vector<double> origin = el["origin"];
+      double radius = el["radius"];
+      double r2 = pow(radius, 2);
+      for (double i = origin[0]-radius; i < origin[0]+radius; i += cube_size_per_particle) {
+        for (double j = origin[1]-radius; j < origin[1]+radius; j += cube_size_per_particle) {
+          for (double k = origin[2]-radius; k < origin[2]+radius; k += cube_size_per_particle) {
+            if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
+              particles->emplace_back(Fluid::Triad{i, j, k});
+            }
+          }
+        }
+      }
+    } else if (type == "file") {
+      string path = el["path"];
+      // TODO
+    } else {
+      throw std::runtime_error(string("Invalid fluid.shape type: ") + type);
+    }
+  }
+  // h: SPH Basics p16
+  fluid = make_shared<Fluid>(std::move(particles), nullptr, h);
+  fp = make_shared<FluidParameters>(density, particle_mass, 0.1, h, epsilon, n, k, c);
 
-    } else if (key == COLLISIONS) { // PLANE
-      if (!object.is_array()) {
-        throw std::runtime_error(COLLISIONS + std::string(" should be an array"));
-      }
-      for (const auto &el: object) {
-        const string type = el["type"];
-        vector<double> vec_point = el["point"];
-        vector<double> vec_normal = el["normal"];
-        double friction = el["friction"];
-        Vector3D point{vec_point[0], vec_point[1], vec_point[2]};
-        Vector3D normal{vec_normal[0], vec_normal[1], vec_normal[2]};
-        Plane *p = new Plane(point, normal, friction);
-        objects->push_back(p);
-      }
+  object = j[COLLISIONS];
+  if (!object.is_array()) {
+    throw std::runtime_error(COLLISIONS + std::string(" should be an array"));
+  }
+  for (const auto &el: object) {
+    const string type = el["type"];
+    vector<double> vec_point = el["point"];
+    vector<double> vec_normal = el["normal"];
+    double friction = el["friction"];
+    Vector3D point{vec_point[0], vec_point[1], vec_point[2]};
+    Vector3D normal{vec_normal[0], vec_normal[1], vec_normal[2]};
+    Plane *p = new Plane(point, normal, friction);
+    objects->push_back(p);
+  }
+
+  object = j[EXTERNAL_FORCES];
+  if (object.is_array()) {
+    vector<double> external_forces_vec = object;
+    for (int i = 0; i < 3; i++) {
+      fp->external_forces[i] = external_forces_vec[i];
     }
   }
 
@@ -379,7 +370,7 @@ int main(int argc, char **argv) {
     file_to_load_from = def_fname.str();
   }
   
-  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects, sphere_num_lat, sphere_num_lon);
+  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects, );
   
   if (!success) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;

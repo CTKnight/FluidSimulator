@@ -33,7 +33,7 @@ struct FluidParameters {
   ~FluidParameters() {}
 
   // Global simulation parameters
-
+  Vector3D external_forces;
   double damping;
   double particle_mass;
   double h;
@@ -60,8 +60,8 @@ struct Fluid {
     double h
   );
   ~Fluid() = default;
-  void simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
-                vector<Vector3D> external_accelerations,
+  void simulate(double frames_per_sec, double simulation_steps,
+                const std::shared_ptr<FluidParameters> &cp, 
                 vector<CollisionObject *> *collision_objects);
 
   vector<Triad> &getParticlePositions() {

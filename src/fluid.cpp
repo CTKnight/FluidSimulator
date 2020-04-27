@@ -47,9 +47,10 @@ Fluid::Fluid(
 	neighbor_search_results.resize(num_particle);
 }
 
-void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
-                vector<Vector3D> external_accelerations,
-                vector<CollisionObject *> *collision_objects) {
+void Fluid::simulate(
+  double frames_per_sec, double simulation_steps, 
+  const std::shared_ptr<FluidParameters> &cp, vector<CollisionObject *> *collision_objects
+) {
   double delta_t = 1.0f / frames_per_sec / simulation_steps;
   auto &particle_positions = triadAsVector3D(*this->particle_positions);
   const auto num_particle = particle_positions.size();
@@ -65,13 +66,12 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   const auto n = cp->n;
   const auto k = cp->k;
   const auto c = cp->c;
+  const Vector3D &external_accelerations = cp->external_forces;
 
   // #pragma omp parallel for num_threads(4) 
   for (int i = 0; i < num_particle; i++) {
     // line 2: apply forces
-    for (const auto &acc: external_accelerations) {
-      particle_velocities[i] += acc * delta_t;
-    }
+      particle_velocities[i] += external_accelerations * delta_t;
     // line 3: predict positions
     preditced_positions[i] = particle_positions[i] + particle_velocities[i] * delta_t;
   }
