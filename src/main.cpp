@@ -232,13 +232,23 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   }
   for (const auto &el: object) {
     const string type = el["type"];
-    vector<double> vec_point = el["point"];
-    vector<double> vec_normal = el["normal"];
-    double friction = el["friction"];
-    Vector3D point{vec_point[0], vec_point[1], vec_point[2]};
-    Vector3D normal{vec_normal[0], vec_normal[1], vec_normal[2]};
-    Plane *p = new Plane(point, normal, friction);
-    objects->push_back(p);
+    CollisionObject *p = nullptr;
+    if (type == string("plane")) {
+      vector<double> vec_point = el["point"];
+      vector<double> vec_normal = el["normal"];
+      double friction = el["friction"];
+      Vector3D point{vec_point[0], vec_point[1], vec_point[2]};
+      Vector3D normal{vec_normal[0], vec_normal[1], vec_normal[2]};
+      p = new Plane(point, normal, friction);
+    } else if (type == string("sphere")) {
+      vector<double> origin = el["origin"];
+      double radius = el["radius"];
+      double friction = el["friction"];
+      p = new Sphere(Vector3D(origin[0],origin[1],origin[2]), radius, friction);
+    }
+    if (p) {
+      objects->push_back(p);
+    }
   }
 
   object = j[EXTERNAL_FORCES];
