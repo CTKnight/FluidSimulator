@@ -152,10 +152,10 @@ void usageError(const char *binaryName) {
   printf("                     Automatically searched for by default.\n");
   printf("  -a     <INT>       Sphere vertices latitude direction.\n");
   printf("  -o     <INT>       Sphere vertices longitude direction.\n");
-  printf("  -p     <INT>       Output particle data folder.\n");
-  printf("  -i     <INT>       Input particle data folder.\n");
-  printf("  -n     <INT>       off for no window.\n");
-  printf("  -n     <INT>       off for no window.\n");
+  printf("  -p     <STRING>    Output particle data folder.\n");
+  printf("  -i     <STRING>    Input particle data folder.\n");
+  printf("  -n                 off for no window.\n");
+  printf("  -s     <INT>       No window rendering duration.\n");
   printf("\n");
   exit(-1);
 }
@@ -312,8 +312,9 @@ int main(int argc, char **argv) {
   std::string particle_foldername_to_input;
   std::string particle_foldername_to_output;
   bool withoutWindow = false;
+  int sec = 1;
   
-  while ((c = getopt (argc, argv, "f:r:a:o:p:i:n")) != -1) {
+  while ((c = getopt (argc, argv, "f:r:a:o:p:i:ns:")) != -1) {
     switch (c) {
       case 'f': {
         file_to_load_from = optarg;
@@ -354,6 +355,13 @@ int main(int argc, char **argv) {
       }
       case 'n': {
         withoutWindow = true;
+        break;
+      }
+      case 's': {
+        sec = atoi(optarg);
+        if (sec < 1) {
+          sec = 1;
+        }
         break;
       }
       default: {
@@ -417,7 +425,7 @@ int main(int argc, char **argv) {
 
   if (withoutWindow) {
     const auto fps = app->getFps();
-    constexpr double duration = 1;
+    double duration = sec;
     int n = 0;
     if (particle_folder_to_output_good) {
       const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
