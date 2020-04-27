@@ -50,9 +50,9 @@ void MarchingCube::reset(double density, double pmass, Real nserach_radius, cons
 
 // get triangles using marching cube algorithm
 void MarchingCube::calculateTriangles(double coefficient, double isolevel, bool force) {
-    for (int i = 0; i < _numGrids[0] - 1; ++i) {
+    for (int k = 0; k < _numGrids[2] - 1; ++k) {
         for (int j = 0; j < _numGrids[1] - 1; ++j) {
-            for (int k = 0; k < _numGrids[2] - 1; ++k) {
+            for (int i = 0; i < _numGrids[0] - 1; ++i) {
                 Vector3D index(i, j, k);
                 MarchingGrid grid;
                 getMarchingGrid(grid, coefficient, index, force);
