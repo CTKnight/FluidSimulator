@@ -15,20 +15,32 @@ using namespace CGL;
 using namespace std;
 
 struct FluidParameters {
-  FluidParameters(): FluidParameters(1000, 0.001, 0.1) {}
+  FluidParameters()=default;
   FluidParameters(
     double density,
     double particle_mass,
     double damping,
-    int solverIterations = 5,
-    double particleRadius = 0.05)
-      : density(density), particle_mass(particle_mass), damping(damping), solverIterations(solverIterations), particleRadius(particleRadius) {}
+    double h,
+    double epsilon,
+    double n,
+    double k,
+    double c,
+    int solverIterations = 4,
+    double particleRadius = 0.02)
+      : density(density), particle_mass(particle_mass), damping(damping),
+        h(h), epsilon(epsilon), n(n), k(k), c(c),
+        solverIterations(solverIterations), particleRadius(particleRadius) {}
   ~FluidParameters() {}
 
   // Global simulation parameters
 
   double damping;
   double particle_mass;
+  double h;
+  double epsilon;
+  double n;
+  double k;
+  double c;
   // unit: kg/m^3
   double density;
   int solverIterations;
@@ -45,11 +57,7 @@ struct Fluid {
   Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities,
-    double h,
-    double epsilon = 600,
-    double n = 4,
-    double k = 0.0001,
-    double c = 0.00007
+    double h
   );
   ~Fluid() = default;
   void simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
@@ -76,11 +84,6 @@ private:
   vector<Triad> particle_preditced_positions;
   vector<Triad> delta_p;
   vector<double> lambda;
-  double h;
-  double epsilon;
-  double n;
-  double k;
-  double c;
 
   CompactNSearch::NeighborhoodSearch nsearch;
   vector<vector<vector<unsigned int>>> neighbor_search_results;

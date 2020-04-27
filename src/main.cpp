@@ -193,6 +193,11 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
       double particle_mass = object["particle_mass"];
       double density = object["density"];
       double cube_size_per_particle = 1. / pow(density/particle_mass, 1./3.);
+      double h = object["h"];
+      double epsilon = object["epsilon"];
+      double n = object["n"];
+      double k = object["k"];
+      double c = object["c"];
       auto shape = object["shape"];
       if (!shape.is_array()) {
         throw std::runtime_error("Fluid shape should be an array");
@@ -232,8 +237,8 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
         }
       }
       // h: SPH Basics p16
-      fluid = make_shared<Fluid>(std::move(particles), nullptr, 0.1);
-      fp = make_shared<FluidParameters>(density, particle_mass, 0.1, 5, 0.005);
+      fluid = make_shared<Fluid>(std::move(particles), nullptr, h);
+      fp = make_shared<FluidParameters>(density, particle_mass, 0.1, h, epsilon, n, k, c);
       // Cloth parameters
 
     } else if (key == COLLISIONS) { // PLANE

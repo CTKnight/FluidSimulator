@@ -15,12 +15,8 @@ using namespace std;
 Fluid::Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities,
-    double h,
-    double epsilon,
-    double n,
-    double k,
-    double c
-): nsearch(h, true), h(h), epsilon(epsilon), n(n), k(k), c(c) {
+    double h
+): nsearch(h, true) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
@@ -60,10 +56,15 @@ void Fluid::simulate(double frames_per_sec, double simulation_steps, const std::
   auto &particle_velocities = triadAsVector3D(*this->particle_velocities);
   auto &preditced_positions = triadAsVector3D(this->particle_preditced_positions);
   auto &delta_p = triadAsVector3D(this->delta_p);
+  const auto density = cp->density;
+  const auto particle_mass = cp->particle_mass;
   const auto damping = cp->damping;
   const auto solverIterations = cp->solverIterations;
-  const auto particle_mass = cp->particle_mass;
-  const auto density = cp->density;
+  const auto h = cp->h;
+  const auto epsilon = cp->epsilon;
+  const auto n = cp->n;
+  const auto k = cp->k;
+  const auto c = cp->c;
 
   // #pragma omp parallel for num_threads(4) 
   for (int i = 0; i < num_particle; i++) {
