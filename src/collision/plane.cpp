@@ -15,6 +15,27 @@ void Plane::collide(PointMass &pm) {
 
 }
 
+void Plane::collide(Vector3D &position, Vector3D &delta_p) {
+  const auto &predicted_position = position + delta_p;
+  // TODO: assumption: axis aligned
+  for (int i = 0; i < 3; i++) {
+    const auto diff = predicted_position[i]-point[i];
+    if (normal[i] == 1) {
+      if (diff < 0) {
+        // delta_p[i] = point[i] - diff - position[i];
+        delta_p[i] = point[i]- position[i];
+      }
+      return;
+    } else if (normal[i] == -1) {
+      if (diff > 0) {
+        // delta_p[i] = point[i] - diff - position[i];
+        delta_p[i] = point[i]- position[i];
+      }
+      return;
+    }
+  }
+}
+
 void Plane::render(GLShader &shader) {
   nanogui::Color color(0.7f, 0.7f, 0.7f, 1.0f);
 

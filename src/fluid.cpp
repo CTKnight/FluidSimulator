@@ -132,6 +132,9 @@ void Fluid::simulate(
       }
       delta_p[i] /= density;
       // line 14: collision detection and response
+      for (const auto co: *collision_objects) {
+        co->collide(particle_positions[i],delta_p[i]);
+      }
     }
     for (int i = 0; i < num_particle; i++) {
       // line 17: update position
@@ -161,6 +164,7 @@ void Fluid::simulate(
       V_xsph  += v_ij * W_poly6(p_ij, h);
       omega_i += cross(v_ij, W_spiky_gradient(p_ij, h)*p_ij);
     }
+    // TODO: vorticity
     // const auto &eta = ;
     // const auto &N = eta.unit();
     // f_vorticity = epsilon*cross(N, omega_i);

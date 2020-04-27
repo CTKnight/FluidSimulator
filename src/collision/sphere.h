@@ -16,6 +16,7 @@ public:
 
   void render(GLShader &shader);
   void collide(PointMass &pm);
+  void collide(Vector3D &position, Vector3D &delta_p);
 
 private:
   Vector3D origin;

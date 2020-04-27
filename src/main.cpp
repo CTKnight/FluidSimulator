@@ -155,6 +155,7 @@ void usageError(const char *binaryName) {
   printf("  -p     <INT>       Output particle data folder.\n");
   printf("  -i     <INT>       Input particle data folder.\n");
   printf("  -n     <INT>       off for no window.\n");
+  printf("  -n     <INT>       off for no window.\n");
   printf("\n");
   exit(-1);
 }

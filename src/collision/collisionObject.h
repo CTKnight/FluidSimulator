@@ -13,6 +13,7 @@ class CollisionObject {
 public:
   virtual void render(GLShader &shader) = 0;
   virtual void collide(PointMass &pm) = 0;
+  virtual void collide(Vector3D &position, Vector3D &delta_p) = 0;
 
 private:
   double friction;

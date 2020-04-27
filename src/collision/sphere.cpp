@@ -12,6 +12,10 @@ void Sphere::collide(PointMass &pm) {
 
 }
 
+void Sphere::collide(Vector3D &position, Vector3D &delta_p) {
+
+}
+
 void Sphere::render(GLShader &shader) {
   // We decrease the radius here so flat triangles don't behave strangely
   // and intersect with the sphere when rendered
