@@ -28,6 +28,7 @@ void MarchingCube::init(double density, double pmass, Real nserach_radius, const
     _particles = particles;
     _neighbors = new NeighborhoodSearch(nserach_radius, true);
     _neighbors->add_point_set(particles.front().data(), particles.size(), true, true);
+    _neighbors->find_neighbors();
     _triangles = new vector<MarchingTriangle>();
 }
 
@@ -117,7 +118,6 @@ int MarchingCube::Polygonise(MarchingGrid &grid, double isolevel) {
         _triangles->push_back(tri);
         ntriang++;
     }
-
     return(ntriang);
 }
 
@@ -144,7 +144,7 @@ void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vecto
     for (int k = 0; k < 2; ++k) {
         for (int j = 0; j < 2; ++j) {
             for (int i = 0; i < 2; ++i) {
-                Vector3D pos = Vector3D((index.x + i) * _unitGrid.x, (index.y + j) * _unitGrid.y, (index.z + k) * _unitGrid.z);
+                Vector3D pos = Vector3D((index.x + i) * _unitGrid.x + _minBox.x, (index.y + j) * _unitGrid.y + _minBox.y, (index.z + k) * _unitGrid.z + _minBox.z);
                 grid.p[4 * k + 2 * j + i] = pos;
                 grid.val[4 * k + 2 * j + i] = getIsoValue(pos, coefficient);
             }
@@ -157,6 +157,7 @@ double MarchingCube::getIsoValue(Vector3D &pos, double coefficient) {
     double isovalue = 0.0;
 
     double h = coefficient * 1.0 / pow(_density / _pmass, 1.0 / 3.0);
+    h = 0.1;
     double const_part = 315.0 / (64.0 * PI * pow(h, 9.0));
 
     vector<vector<unsigned int>> neighbors_index;
@@ -174,9 +175,9 @@ double MarchingCube::getIsoValue(Vector3D &pos, double coefficient) {
     return isovalue;
 }
 
-void MarchingCube::writeTrianglesIntoObjs(string filepath) {
+void MarchingCube::writeTrianglesIntoObjs(string fileName) {
     ofstream file;
-    file.open(filepath + ".obj");
+    file.open(fileName + ".obj");
 
     unordered_map<string, int> map;
     vector<string> face;
