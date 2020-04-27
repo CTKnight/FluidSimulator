@@ -195,9 +195,9 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
     if (type == "cube") {
       vector<double> origin = el["origin"];
       vector<double> size = el["size"];
-      for (double i = origin[0]; i < origin[0] + size[0]; i += cube_size_per_particle) {
-        for (double j = origin[1]; j < origin[1] + size[1]; j += cube_size_per_particle) {
-          for (double k = origin[2]; k < origin[2] + size[2]; k += cube_size_per_particle) {
+      for (double i = origin[0] + cube_size_per_particle/2; i < origin[0] + size[0]; i += cube_size_per_particle) {
+        for (double j = origin[1] + cube_size_per_particle/2; j < origin[1] + size[1]; j += cube_size_per_particle) {
+          for (double k = origin[2] + cube_size_per_particle/2; k < origin[2] + size[2]; k += cube_size_per_particle) {
             particles->emplace_back(Fluid::Triad{i, j, k});
           }
         }
@@ -206,9 +206,9 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
       vector<double> origin = el["origin"];
       double radius = el["radius"];
       double r2 = pow(radius, 2);
-      for (double i = origin[0]-radius; i < origin[0]+radius; i += cube_size_per_particle) {
-        for (double j = origin[1]-radius; j < origin[1]+radius; j += cube_size_per_particle) {
-          for (double k = origin[2]-radius; k < origin[2]+radius; k += cube_size_per_particle) {
+      for (double i = origin[0]-radius + cube_size_per_particle/2; i < origin[0]+radius; i += cube_size_per_particle) {
+        for (double j = origin[1]-radius + cube_size_per_particle/2; j < origin[1]+radius; j += cube_size_per_particle) {
+          for (double k = origin[2]-radius + cube_size_per_particle/2; k < origin[2]+radius; k += cube_size_per_particle) {
             if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
               particles->emplace_back(Fluid::Triad{i, j, k});
             }
@@ -370,7 +370,7 @@ int main(int argc, char **argv) {
     file_to_load_from = def_fname.str();
   }
   
-  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects, );
+  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects);
   
   if (!success) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
