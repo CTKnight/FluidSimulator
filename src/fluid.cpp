@@ -13,7 +13,7 @@
 using namespace std;
 
 Fluid::Fluid(
-    unique_ptr<vector<Triad>> &&particle_positions, 
+    unique_ptr<vector<Triad>> &&particle_positions,
     unique_ptr<vector<Triad>> &&particle_velocities,
     double h
 ): nsearch(h, true) {

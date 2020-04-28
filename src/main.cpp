@@ -23,6 +23,8 @@
 #include "clothSimulator.h"
 #include "json.hpp"
 #include "misc/file_utils.h"
+#include "marchingCube.h"
+#include "marchingCube.cpp"
 
 typedef uint32_t gid_t;
 
@@ -286,6 +288,70 @@ bool find_project_root(const std::vector<std::string>& search_paths, std::string
   return false;
 }
 
+void testingMarchingCube() {
+    // testing marching cube
+    cout << "BEGIN TESTING \n";
+    Vector3D ugrid = Vector3D(0.01, 0.01, 0.01);
+    Vector3D minbox = Vector3D(1.0, 1.0, 0.0);
+    Vector3D maxbox = Vector3D(1.5, 1.5, 0.5);
+    vector<array<Real, 3>> part;
+
+    string line;
+    ifstream myfile ("example.txt");
+    if (myfile.is_open())
+    {
+        while ( getline (myfile,line) )
+        {
+            vector <string> tokens;
+            stringstream check1(line);
+            string intermediate;
+            while(getline(check1, intermediate, ' '))  tokens.push_back(intermediate);
+            array<Real, 3> arr;
+            for(int i = 0; i < tokens.size(); i++) {
+                arr[i] = stod(tokens[i]);
+            }
+            part.push_back(arr);
+        }
+        myfile.close();
+    }
+    cout << "part size =" << part.size() << endl;
+    MarchingCube cube(6000, 1, 0.1, part, ugrid, minbox, maxbox);
+    cube.calculateTriangles(0.1, 0, true);
+    cube.calculateTriangles(0.1, 500, true);
+    cube.calculateTriangles(0.1, 1000, true);
+    cube.calculateTriangles(0.1, 1500, true);
+    cube.calculateTriangles(0.1, 2000, true);
+    cube.calculateTriangles(0.1, 2500, true);
+    cube.calculateTriangles(0.1, 3000, true);
+    cube.calculateTriangles(0.1, 3500, true);
+    cube.calculateTriangles(0.1, 4000, true);
+    cube.calculateTriangles(0.1, 4500, true);
+    cube.calculateTriangles(0.1, 5000, true);
+    cube.calculateTriangles(0.1, 5500, true);
+    cube.calculateTriangles(0.1, 5600, true);
+    cube.calculateTriangles(0.1, 5700, true);
+    cube.calculateTriangles(0.1, 5800, true);
+    cube.calculateTriangles(0.1, 5900, true);
+    cube.calculateTriangles(0.1, 5980, true);
+    cube.calculateTriangles(0.1, 5990, true);
+    cube.calculateTriangles(0.1, 6000, true);
+    cube.calculateTriangles(0.1, 6010, true);
+    cube.calculateTriangles(0.1, 6020, true);
+    cube.calculateTriangles(0.1, 6100, true);
+    cube.calculateTriangles(0.1, 6200, true);
+    cube.calculateTriangles(0.1, 6300, true);
+    cube.calculateTriangles(0.1, 6400, true);
+    cube.calculateTriangles(0.1, 6500, true);
+    cube.calculateTriangles(0.1, 7000, true);
+    cube.calculateTriangles(0.1, 7500, true);
+    cube.calculateTriangles(0.1, 8000, true);
+    cube.calculateTriangles(0.1, 8500, true);
+    cube.calculateTriangles(0.1, 9000, true);
+    cube.calculateTriangles(0.1, 9500, true);
+    cube.calculateTriangles(0.1, 10000, true);
+    cube.writeTrianglesIntoObjs("temp");
+}
+
 int main(int argc, char **argv) {
   // Attempt to find project root
   std::vector<std::string> search_paths = {
@@ -478,6 +544,7 @@ int main(int argc, char **argv) {
       FileUtils::list_files_in_directory(particle_foldername_to_input, tmp);
       max_n = tmp.size();
     }
+    // testingMarchingCube();
     while (!glfwWindowShouldClose(window)) {
       glfwPollEvents();
 
