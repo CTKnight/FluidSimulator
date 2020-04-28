@@ -68,7 +68,7 @@ void Fluid::simulate(
   const auto c = cp->c;
   const Vector3D &external_accelerations = cp->external_forces;
 
-  // #pragma omp parallel for num_threads(4) 
+  #pragma omp parallel for
   for (int i = 0; i < num_particle; i++) {
     // line 2: apply forces
       particle_velocities[i] += external_accelerations * delta_t;
@@ -78,6 +78,7 @@ void Fluid::simulate(
 
   // update nsearch
   nsearch.find_neighbors();
+  #pragma omp parallel for
   for (int i = 0; i < num_particle; i++) {
     // line 6: find neighboring particles
     neighbor_search_results[i].clear();
@@ -85,6 +86,7 @@ void Fluid::simulate(
   }
 
   for (int iter = 0; iter < solverIterations; iter++) {
+    #pragma omp parallel for
     for (int i = 0; i < num_particle; i++) {
       const auto &p_i = particle_positions[i];
       // line 10: calculate lambda
@@ -116,6 +118,8 @@ void Fluid::simulate(
       C_i_p_k_2_sum /= pow(density, 2);
       lambda[i] = - C_i / (C_i_p_k_2_sum+epsilon);
     }
+
+    #pragma omp parallel for
     for (int i = 0; i < num_particle; i++) {
       const auto &p_i = particle_positions[i];
       // line 13: calculate delta p_i
@@ -136,17 +140,21 @@ void Fluid::simulate(
         co->collide(particle_positions[i],delta_p[i]);
       }
     }
+
+    #pragma omp parallel for
     for (int i = 0; i < num_particle; i++) {
       // line 17: update position
       preditced_positions[i] += delta_p[i];
     }
   }
 
+  #pragma omp parallel for
   for (int i = 0; i < num_particle; i++) {
     // line 21: update velocity
     particle_velocities[i] = (preditced_positions[i] - particle_positions[i]) / delta_t;
   }
 
+  #pragma omp parallel for
   for (int i = 0; i < num_particle; i++) {
     const auto &p_i = particle_positions[i];
     const auto &neighbors = neighbor_search_results[i][0];
