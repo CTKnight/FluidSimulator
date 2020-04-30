@@ -10,20 +10,20 @@ using namespace std;
 
 struct Sphere : public CollisionObject {
 public:
-  Sphere(const Vector3D &origin, double radius, double friction, int num_lat = 40, int num_lon = 40)
+  Sphere(const Vector3R &origin, REAL radius, REAL friction, int num_lat = 40, int num_lon = 40)
       : origin(origin), radius(radius), radius2(radius * radius),
         friction(friction), m_sphere_mesh(Misc::SphereMesh(num_lat, num_lon)) {}
 
   void render(GLShader &shader);
   void collide(PointMass &pm);
-  void collide(Vector3D &position, Vector3D &delta_p);
+  void collide(Vector3R &position, Vector3R &delta_p);
 
 private:
-  Vector3D origin;
-  double radius;
-  double radius2;
+  Vector3R origin;
+  REAL radius;
+  REAL radius2;
 
-  double friction;
+  REAL friction;
   
   Misc::SphereMesh m_sphere_mesh;
 };

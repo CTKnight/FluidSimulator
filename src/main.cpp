@@ -142,9 +142,9 @@ void setGLFWCallbacks() {
 void testingMarchingCube() {
     // testing marching cube
     cout << "BEGIN TESTING \n";
-    Vector3D ugrid = Vector3D(0.01, 0.01, 0.01);
-    Vector3D minbox = Vector3D(1.0, 1.0, 0.0);
-    Vector3D maxbox = Vector3D(1.5, 1.5, 0.5);
+    Vector3R ugrid = Vector3R(0.01, 0.01, 0.01);
+    Vector3R minbox = Vector3R(1.0, 1.0, 0.0);
+    Vector3R maxbox = Vector3R(1.5, 1.5, 0.5);
     vector<array<Real, 3>> part;
 
     string line;

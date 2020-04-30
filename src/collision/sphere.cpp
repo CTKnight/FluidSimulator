@@ -12,7 +12,7 @@ void Sphere::collide(PointMass &pm) {
 
 }
 
-void Sphere::collide(Vector3D &position, Vector3D &delta_p) {
+void Sphere::collide(Vector3R &position, Vector3R &delta_p) {
 
 }
 

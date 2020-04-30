@@ -6,6 +6,7 @@
 #include <nanogui/nanogui.h>
 
 #include "CGL/CGL.h"
+#include "../vector3R.h"
 
 using namespace nanogui;
 
@@ -22,7 +23,7 @@ public:
    * Draws a sphere with the given position and radius in opengl, using the
    * current modelview/projection matrices and color/material settings.
    */
-  void draw_sphere(GLShader &shader, const Vector3D &p, double r);
+  void draw_sphere(GLShader &shader, const Vector3R &p, double r);
 private:
   std::vector<unsigned int> Indices;
   std::vector<double> Vertices;

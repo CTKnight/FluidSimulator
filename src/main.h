@@ -22,6 +22,7 @@
 #include "collision/sphere.h"
 #include "fluid.h"
 #include "misc/file_utils.h"
+#include "real.h"
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -81,14 +82,14 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   i >> j;
 
   json object = j[FLUID];
-  double particle_mass = object["particle_mass"];
-  double density = object["density"];
-  double cube_size_per_particle = 1. / pow(density/particle_mass, 1./3.);
-  double h = object["h"];
-  double epsilon = object["epsilon"];
-  double n = object["n"];
-  double k = object["k"];
-  double c = object["c"];
+  REAL particle_mass = object["particle_mass"];
+  REAL density = object["density"];
+  REAL cube_size_per_particle = 1. / pow(density/particle_mass, 1./3.);
+  REAL h = object["h"];
+  REAL epsilon = object["epsilon"];
+  REAL n = object["n"];
+  REAL k = object["k"];
+  REAL c = object["c"];
   auto shape = object["shape"];
   if (!shape.is_array()) {
     throw std::runtime_error("Fluid shape should be an array");
@@ -98,22 +99,22 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   for (const auto &el: shape) {
     string type = el["type"];
     if (type == "cube") {
-      vector<double> origin = el["origin"];
-      vector<double> size = el["size"];
-      for (double i = origin[0] + cube_size_per_particle/2; i < origin[0] + size[0]; i += cube_size_per_particle) {
-        for (double j = origin[1] + cube_size_per_particle/2; j < origin[1] + size[1]; j += cube_size_per_particle) {
-          for (double k = origin[2] + cube_size_per_particle/2; k < origin[2] + size[2]; k += cube_size_per_particle) {
+      vector<REAL> origin = el["origin"];
+      vector<REAL> size = el["size"];
+      for (REAL i = origin[0] + cube_size_per_particle/2; i < origin[0] + size[0]; i += cube_size_per_particle) {
+        for (REAL j = origin[1] + cube_size_per_particle/2; j < origin[1] + size[1]; j += cube_size_per_particle) {
+          for (REAL k = origin[2] + cube_size_per_particle/2; k < origin[2] + size[2]; k += cube_size_per_particle) {
             particles->emplace_back(Fluid::Triad{i, j, k});
           }
         }
       }
     } else if (type == "sphere") {
-      vector<double> origin = el["origin"];
-      double radius = el["radius"];
-      double r2 = pow(radius, 2);
-      for (double i = origin[0]-radius + cube_size_per_particle/2; i < origin[0]+radius; i += cube_size_per_particle) {
-        for (double j = origin[1]-radius + cube_size_per_particle/2; j < origin[1]+radius; j += cube_size_per_particle) {
-          for (double k = origin[2]-radius + cube_size_per_particle/2; k < origin[2]+radius; k += cube_size_per_particle) {
+      vector<REAL> origin = el["origin"];
+      REAL radius = el["radius"];
+      REAL r2 = pow(radius, 2);
+      for (REAL i = origin[0]-radius + cube_size_per_particle/2; i < origin[0]+radius; i += cube_size_per_particle) {
+        for (REAL j = origin[1]-radius + cube_size_per_particle/2; j < origin[1]+radius; j += cube_size_per_particle) {
+          for (REAL k = origin[2]-radius + cube_size_per_particle/2; k < origin[2]+radius; k += cube_size_per_particle) {
             if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
               particles->emplace_back(Fluid::Triad{i, j, k});
             }
@@ -139,17 +140,17 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
     const string type = el["type"];
     CollisionObject *p = nullptr;
     if (type == string("plane")) {
-      vector<double> vec_point = el["point"];
-      vector<double> vec_normal = el["normal"];
-      double friction = el["friction"];
-      Vector3D point{vec_point[0], vec_point[1], vec_point[2]};
-      Vector3D normal{vec_normal[0], vec_normal[1], vec_normal[2]};
+      vector<REAL> vec_point = el["point"];
+      vector<REAL> vec_normal = el["normal"];
+      REAL friction = el["friction"];
+      Vector3R point{vec_point[0], vec_point[1], vec_point[2]};
+      Vector3R normal{vec_normal[0], vec_normal[1], vec_normal[2]};
       p = new Plane(point, normal, friction);
     } else if (type == string("sphere")) {
-      vector<double> origin = el["origin"];
-      double radius = el["radius"];
-      double friction = el["friction"];
-      p = new Sphere(Vector3D(origin[0],origin[1],origin[2]), radius, friction);
+      vector<REAL> origin = el["origin"];
+      REAL radius = el["radius"];
+      REAL friction = el["friction"];
+      p = new Sphere(Vector3R(origin[0],origin[1],origin[2]), radius, friction);
     }
     if (p) {
       objects->push_back(p);
@@ -158,7 +159,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
 
   object = j[EXTERNAL_FORCES];
   if (object.is_array()) {
-    vector<double> external_forces_vec = object;
+    vector<REAL> external_forces_vec = object;
     for (int i = 0; i < 3; i++) {
       fp->external_forces[i] = external_forces_vec[i];
     }

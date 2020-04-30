@@ -15,7 +15,7 @@ void Plane::collide(PointMass &pm) {
 
 }
 
-void Plane::collide(Vector3D &position, Vector3D &delta_p) {
+void Plane::collide(Vector3R &position, Vector3R &delta_p) {
   const auto &predicted_position = position + delta_p;
   // TODO: assumption: axis aligned
   for (int i = 0; i < 3; i++) {

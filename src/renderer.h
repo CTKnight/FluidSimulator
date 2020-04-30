@@ -25,7 +25,7 @@ struct OpenGLRenderder: ObjectRenderer {
 
   void render(GLShader &shader, const Fluid &fluid, const FluidParameters &fp) override {
     const auto &particlePositions = fluid.getParticlePositions();
-    Vector3D position;
+    Vector3R position;
     for (const auto &p: particlePositions) {
       position[0] = p[0];
       position[1] = p[1];

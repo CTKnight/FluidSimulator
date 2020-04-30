@@ -11,6 +11,8 @@
 #include <CompactNSearch>
 #include "collision/collisionObject.h"
 #include "marchingCube.h"
+#include "real.h"
+#include "vector3R.h"
 
 using namespace CGL;
 using namespace std;
@@ -35,7 +37,7 @@ struct FluidParameters {
   ~FluidParameters() {}
 
   // Global simulation parameters
-  Vector3D external_forces;
+  Vector3R external_forces;
   double damping;
   double particle_mass;
   double h;
@@ -55,7 +57,7 @@ struct FluidParameters {
 
 // default parameter: http://graphics.stanford.edu/courses/cs348c/PA1_PBF2016/index.html
 struct Fluid {
-  using Triad = array<CompactNSearch::Real, 3>;
+  using Triad = array<REAL, 3>;
   Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities,
@@ -92,12 +94,12 @@ private:
   vector<vector<vector<unsigned int>>> neighbor_search_results;
 };
 
-inline Vector3D &triadAsVector3D(Fluid::Triad &triad);
-inline const Vector3D &triadAsVector3D(const Fluid::Triad &triad);
-inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads);
-inline const vector<Vector3D> &triadAsVector3D(const vector<Fluid::Triad> &triads);
+inline Vector3R &triadAsVector3R(Fluid::Triad &triad);
+inline const Vector3R &triadAsVector3R(const Fluid::Triad &triad);
+inline vector<Vector3R> &triadAsVector3R(vector<Fluid::Triad> &triads);
+inline const vector<Vector3R> &triadAsVector3R(const vector<Fluid::Triad> &triads);
 
-inline double W_poly6(const Vector3D &r, double h) {
+inline double W_poly6(const Vector3R &r, double h) {
   const auto r2 = r.norm2();
   const auto h2 = pow(h, 2);
   if (r2 > h2) {
@@ -107,7 +109,7 @@ inline double W_poly6(const Vector3D &r, double h) {
 }
 
 // https://www.wolframalpha.com/input/?i=gradient+15%2F%28PI*h%5E6%29*%28h-x%29%5E3
-inline double W_spiky_gradient(const Vector3D &r_vec, double h) {
+inline double W_spiky_gradient(const Vector3R &r_vec, double h) {
   const auto r = r_vec.norm();
   if (r > h) {
     return 0;
@@ -115,7 +117,7 @@ inline double W_spiky_gradient(const Vector3D &r_vec, double h) {
   return -45 / (PI * pow(h, 6)) * pow(h - r, 2);
 }
 
-inline double W_viscosity(const Vector3D &r_vec, double h) {
+inline double W_viscosity(const Vector3R &r_vec, double h) {
   const auto r = r_vec.norm();
   if (r > h) {
     return 0;
@@ -123,7 +125,6 @@ inline double W_viscosity(const Vector3D &r_vec, double h) {
   return 15 / (2 * PI * pow(h, 3)) * ( -pow(r,3)/(2*pow(h,3)) + pow(r/h, 2) + (h/(2*r)) - 1);
 }
 
-std::istream& operator>>(std::istream& os, Vector3D& v);
 std::istream& operator>>(std::istream& is, Fluid::Triad& v);
 std::ostream& operator<<(std::ostream& os, const Fluid::Triad& v);
 std::istream& operator>>(std::istream& is, Fluid& fluid);

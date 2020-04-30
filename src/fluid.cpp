@@ -55,11 +55,11 @@ void Fluid::simulate(
   const std::shared_ptr<FluidParameters> &cp, vector<CollisionObject *> *collision_objects
 ) {
   double delta_t = 1.0f / frames_per_sec / simulation_steps;
-  auto &particle_positions = triadAsVector3D(*this->particle_positions);
+  auto &particle_positions = triadAsVector3R(*this->particle_positions);
   const auto num_particle = particle_positions.size();
-  auto &particle_velocities = triadAsVector3D(*this->particle_velocities);
-  auto &preditced_positions = triadAsVector3D(this->particle_preditced_positions);
-  auto &delta_p = triadAsVector3D(this->delta_p);
+  auto &particle_velocities = triadAsVector3R(*this->particle_velocities);
+  auto &preditced_positions = triadAsVector3R(this->particle_preditced_positions);
+  auto &delta_p = triadAsVector3R(this->delta_p);
   const auto density = cp->density;
   const auto particle_mass = cp->particle_mass;
   const auto damping = cp->damping;
@@ -69,7 +69,7 @@ void Fluid::simulate(
   const auto n = cp->n;
   const auto k = cp->k;
   const auto c = cp->c;
-  const Vector3D &external_accelerations = cp->external_forces;
+  const Vector3R &external_accelerations = cp->external_forces;
 
   #pragma omp parallel for
   for (int i = 0; i < num_particle; i++) {
@@ -110,7 +110,7 @@ void Fluid::simulate(
       // if k = j
       double C_i_p_k_j_2 = 0;
       // if k = i
-      Vector3D C_i_p_k_i;
+      Vector3R C_i_p_k_i;
       for (const auto &j: neighbors) {
         const auto &p_j = particle_positions[j];
         const auto W_spiky_gradient_i_j = W_spiky_gradient(p_i-p_j, h) * (p_i-p_j);
@@ -163,10 +163,10 @@ void Fluid::simulate(
     const auto &neighbors = neighbor_search_results[i][0];
 
     // line 22: vorticity confinement and XSPH viscosity
-    Vector3D f_vorticity;
-    Vector3D omega_i;
+    Vector3R f_vorticity;
+    Vector3R omega_i;
     // Eq 17:
-    Vector3D V_xsph;
+    Vector3R V_xsph;
     for (const auto &j: neighbors) {
       const auto &p_j = particle_positions[j];
       const auto &p_ij = p_i-p_j;
@@ -191,29 +191,20 @@ void Fluid::reset() {
 
 }
 
-inline Vector3D &triadAsVector3D(Fluid::Triad &triad) {
-  return reinterpret_cast<Vector3D &>(triad);
+inline Vector3R &triadAsVector3R(Fluid::Triad &triad) {
+  return reinterpret_cast<Vector3R &>(triad);
 }
 
-inline const Vector3D &triadAsVector3D(const Fluid::Triad &triad) {
-  return reinterpret_cast<const Vector3D &>(triad);
+inline const Vector3R &triadAsVector3R(const Fluid::Triad &triad) {
+  return reinterpret_cast<const Vector3R &>(triad);
 }
 
-inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads) {
-  return reinterpret_cast<vector<Vector3D> &>(triads);
+inline vector<Vector3R> &triadAsVector3R(vector<Fluid::Triad> &triads) {
+  return reinterpret_cast<vector<Vector3R> &>(triads);
 }
 
-inline const vector<Vector3D> &triadAsVector3D(const vector<Fluid::Triad> &triads) {
-  return reinterpret_cast<const vector<Vector3D> &>(triads);
-}
-
-std::istream& operator>>(std::istream& is, Vector3D& v) {
-  string buffer;
-  char c;
-  std::getline(is, buffer);
-  std::stringstream ss(buffer);
-  ss >> c >> v.x >> c >> v.y >> c >> v.z;
-  return is;
+inline const vector<Vector3R> &triadAsVector3R(const vector<Fluid::Triad> &triads) {
+  return reinterpret_cast<const vector<Vector3R> &>(triads);
 }
 
 std::istream& operator>>(std::istream& is, Fluid::Triad& v) {

@@ -5,53 +5,54 @@
 #include <stdlib.h>
 #include "CGL/CGL.h"
 #include "CGL/misc.h"
-#include "CGL/vector3D.h"
+#include "Vector3R.h"
 #include <CompactNSearch>
 #include <fstream>
+#include "real.h"
 
 using namespace std;
 using namespace CGL;
 using namespace CompactNSearch;
 
 struct MarchingTriangle {
-    Vector3D p[3];
+    Vector3R p[3];
 };
 
 struct MarchingGrid {
-    Vector3D p[8];
+    Vector3R p[8];
     double val[8];
 };
 
 class MarchingCube {
 public:
-    MarchingCube(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-            const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox); // constructor
+    MarchingCube(double density, double pmass, REAL nserach_radius, const vector<array<REAL, 3>> &particles,
+            const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox); // constructor
     ~MarchingCube(); // destructor
-    void reset(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-            const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox); // reset variables
+    void reset(double density, double pmass, REAL nserach_radius, const vector<array<REAL, 3>> &particles,
+            const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox); // reset variables
     inline const vector<MarchingTriangle> *getTriangles() { return _triangles; } // return triangle vector
     inline int getNumTriangles() { return _totTriangles; } // return total number of triangles
     void calculateTriangles(double coefficient=2.5, double isolevel=800, bool force=false); // get all triangles via marchingCube algorithm
     void writeTrianglesIntoObjs(string filepath); // write triangle locations into obj file
 
 protected:
-    void init(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-              const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox); // init members
+    void init(double density, double pmass, REAL nserach_radius, const vector<array<REAL, 3>> &particles,
+              const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox); // init members
     void destroy(); // destroy new arrays
-    void getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3D &index, bool force); // get marchingGrid for each unit cube, with iso values calculated
-    double getIsoValue(Vector3D &pos, double coefficient, bool force); // get iso value for each vertex (with its nearest neighbors)
+    void getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3R &index, bool force); // get marchingGrid for each unit cube, with iso values calculated
+    double getIsoValue(Vector3R &pos, double coefficient, bool force); // get iso value for each vertex (with its nearest neighbors)
     int Polygonise(MarchingGrid &grid, double isolevel); // get triangles for each small unit cube
-    Vector3D VertexInterp(double isolevel, Vector3D a, Vector3D b, double val_a, double val_b); // vertex interpolation for edge intersection
+    Vector3R VertexInterp(double isolevel, Vector3R a, Vector3R b, double val_a, double val_b); // vertex interpolation for edge intersection
 
     // private members
     double _density; // density
     double _pmass; // particle mass
     int _numGrids[3]; // number of grid on x, y, z coordinates, get ceiling value
     int _totTriangles; // total number of triangles
-    vector<array<Real, 3>> _particles; // vector stores all particles' locations
-    Vector3D _unitGrid; // unit grid for x, y, z coordinates
-    Vector3D _minBox; // minimum bounding box value for the image
-    Vector3D _maxBox; // maximum bounding box value for the image
+    vector<array<REAL, 3>> _particles; // vector stores all particles' locations
+    Vector3R _unitGrid; // unit grid for x, y, z coordinates
+    Vector3R _minBox; // minimum bounding box value for the image
+    Vector3R _maxBox; // maximum bounding box value for the image
     NeighborhoodSearch *_neighbors;
     vector<MarchingTriangle> *_triangles;
 

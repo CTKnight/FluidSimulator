@@ -2,7 +2,7 @@
 
 // constructor
 MarchingCube::MarchingCube(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-                           const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox) {
+                           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
     init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox);
 }
 
@@ -13,7 +13,7 @@ MarchingCube::~MarchingCube() {
 
 // initialize private members
 void MarchingCube::init(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-                   const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox) {
+                   const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
     // init variables
     _density = density;
     _pmass = pmass;
@@ -43,7 +43,7 @@ void MarchingCube::destroy() {
 
 // reset private members
 void MarchingCube::reset(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-           const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox) {
+           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
     destroy();
     init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox);
 }
@@ -53,7 +53,7 @@ void MarchingCube::calculateTriangles(double coefficient, double isolevel, bool 
     for (int k = 0; k < _numGrids[2] - 1; ++k) {
         for (int j = 0; j < _numGrids[1] - 1; ++j) {
             for (int i = 0; i < _numGrids[0] - 1; ++i) {
-                Vector3D index(i, j, k);
+                Vector3R index(i, j, k);
                 MarchingGrid grid;
                 getMarchingGrid(grid, coefficient, index, force);
                 _totTriangles += Polygonise(grid, isolevel);
@@ -63,11 +63,11 @@ void MarchingCube::calculateTriangles(double coefficient, double isolevel, bool 
 }
 
 // set actual positions and corresponding isovalues for each vertex of the unit cube
-void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3D &index, bool force) {
+void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3R &index, bool force) {
     for (int k = 0; k < 2; ++k) {
         for (int j = 0; j < 2; ++j) {
             for (int i = 0; i < 2; ++i) {
-                Vector3D pos = Vector3D((index.x + i) * _unitGrid.x + _minBox.x, (index.y + j) * _unitGrid.y + _minBox.y, (index.z + k) * _unitGrid.z + _minBox.z);
+                Vector3R pos = Vector3R((index.x + i) * _unitGrid.x + _minBox.x, (index.y + j) * _unitGrid.y + _minBox.y, (index.z + k) * _unitGrid.z + _minBox.z);
                 grid.p[4 * k + 2 * j + i] = pos;
                 grid.val[4 * k + 2 * j + i] = getIsoValue(pos, coefficient, force);
             }
@@ -76,7 +76,7 @@ void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vecto
 }
 
 // get isovalue for each vertex
-double MarchingCube::getIsoValue(Vector3D &pos, double coefficient, bool force) {
+double MarchingCube::getIsoValue(Vector3R &pos, double coefficient, bool force) {
     Real rpos[3] = {pos.x, pos.y, pos.z};
     double isovalue = 0.0;
     double h = coefficient * 1.0 / pow(_density / _pmass, 1.0 / 3.0);
@@ -104,7 +104,7 @@ double MarchingCube::getIsoValue(Vector3D &pos, double coefficient, bool force) 
 int MarchingCube::Polygonise(MarchingGrid &grid, double isolevel) {
     int ntriang = 0;
     int cubeindex = 0;
-    Vector3D vertlist[12];
+    Vector3R vertlist[12];
 
     /* Determine the index into the edge table which tells us which vertices are inside of the surface */
     if (grid.val[0] < isolevel) cubeindex |= 1;
@@ -158,9 +158,9 @@ int MarchingCube::Polygonise(MarchingGrid &grid, double isolevel) {
 }
 
 /* Linearly interpolate the position where an isosurface cuts an edge between two vertices, each with their own scalar value */
-Vector3D MarchingCube::VertexInterp(double isolevel, Vector3D a, Vector3D b, double val_a, double val_b) {
+Vector3R MarchingCube::VertexInterp(double isolevel, Vector3R a, Vector3R b, double val_a, double val_b) {
     double mu;
-    Vector3D p;
+    Vector3R p;
 
     if (abs(isolevel - val_a) < 0.00001)
         return(a);

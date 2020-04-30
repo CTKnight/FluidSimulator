@@ -26,9 +26,32 @@ set(FLUIDSIM_VIEWER_SOURCE
     renderer.cpp
 )
 
+set(FLUIDSIM_CUDA_SOURCE
+    # Cloth simulation objects
+    fluid.cpp
+
+    # Collision objects
+    collision/sphere.cpp
+    collision/plane.cpp
+
+    # Application
+    cuda/cudaMain.cpp
+
+    misc/sphere_drawing.cpp
+    misc/file_utils.cpp
+
+    # Camera
+    camera.cpp
+)
+
 # Windows-only sources
 if(WIN32)
 list(APPEND FLUIDSIM_VIEWER_SOURCE
+    # For get-opt
+    misc/getopt.c
+)
+
+list(APPEND FLUIDSIM_CUDA_SOURCE
     # For get-opt
     misc/getopt.c
 )
@@ -88,6 +111,14 @@ if(OpenMP_CXX_FOUND)
 endif(OpenMP_CXX_FOUND)
 
 if (BUILD_CUDA)
+    # Cloth simulation source
+    add_executable(fluidsimCuda ${FLUIDSIM_CUDA_SOURCE})
+    target_link_libraries(fluidsimCuda
+        CGL ${CGL_LIBRARIES}
+        ${CMAKE_THREADS_INIT}
+        CompactNSearch
+        cuNSearch
+    )
 endif (BUILD_CUDA)
 
 #-------------------------------------------------------------------------------
