@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include <stdio.h>
 #include <unordered_set>
 #include <stdlib.h> // atoi for getopt inputs
@@ -17,8 +18,14 @@
 #include <sys/stat.h>
 #endif
 
+#include "collision/plane.h"
+#include "collision/sphere.h"
+#include "fluid.h"
+#include "misc/file_utils.h"
+
 #include "json.hpp"
 using json = nlohmann::json;
+using namespace std;
 
 const string PLANE = "plane";
 const string FLUID = "fluid";
@@ -192,6 +199,17 @@ int mkdir_main(const char *dir) {
     err = mkdir(dir,0755);
   #endif
   return err;
+}
+
+void writeFluidToFileN(const string &particle_foldername_to_output, int n, const Fluid &fluid) {
+  const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
+  ofstream particle_file_to_output(output_filename);
+  if (particle_file_to_output) {
+    particle_file_to_output << fluid;
+  } else {
+    throw std::runtime_error(output_filename + string(" is not good to write!"));
+  }
+  particle_file_to_output.close();
 }
 
 #endif

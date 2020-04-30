@@ -20,8 +20,11 @@ Fluid::Fluid(
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
-  const auto num_particle = particle_positions->size();
   this->particle_positions = std::move(particle_positions);
+}
+
+void Fluid::init() {
+  const auto num_particle = particle_positions->size();
   if (particle_velocities != nullptr) {
     if (num_particle != particle_velocities->size()) {
       throw std::runtime_error("particle_positions->size()  != particle_velocities->size()!");

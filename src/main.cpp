@@ -329,6 +329,8 @@ int main(int argc, char **argv) {
 
   // Initialize the ClothSimulator object
 
+  fluid->init();
+
   app = new ClothSimulator(withoutWindow);
   app->loadFluid(fluid);
   app->loadFluidParameters(fp);
@@ -339,14 +341,7 @@ int main(int argc, char **argv) {
     double duration = sec;
     int n = 0;
     if (particle_folder_to_output_good) {
-      const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
-      ofstream particle_file_to_output(output_filename);
-      if (particle_file_to_output) {
-        particle_file_to_output << *fluid;
-      } else {
-        throw std::runtime_error(output_filename + string(" is not good to write!"));
-      }
-      particle_file_to_output.close();
+      writeFluidToFileN(particle_foldername_to_output, n, *fluid);
     }
     n++;
     for (int t = 0; t < duration; t++) {
@@ -354,14 +349,7 @@ int main(int argc, char **argv) {
         app->simulate();
         // output per frame
         if (particle_folder_to_output_good) {
-          const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
-          ofstream particle_file_to_output(output_filename);
-          if (particle_file_to_output) {
-            particle_file_to_output << *fluid;
-          } else {
-            throw std::runtime_error(output_filename + string(" is not good to write!"));
-          }
-          particle_file_to_output.close();
+          writeFluidToFileN(particle_foldername_to_output, n, *fluid);
         }
         n++;
       }

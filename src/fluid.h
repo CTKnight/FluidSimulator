@@ -17,6 +17,7 @@ using namespace std;
 
 struct FluidParameters {
   FluidParameters()=default;
+  FluidParameters(const FluidParameters& other)=default;
   FluidParameters(
     double density,
     double particle_mass,
@@ -61,6 +62,7 @@ struct Fluid {
     double h
   );
   ~Fluid() = default;
+  void init();
   void simulate(double frames_per_sec, double simulation_steps,
                 const std::shared_ptr<FluidParameters> &cp, 
                 vector<CollisionObject *> *collision_objects);
