@@ -81,26 +81,13 @@ target_link_libraries(fluidsim
     CompactNSearch
 )
 
-add_executable(nsearchDemo nsearchMain.cpp)
-target_link_libraries(nsearchDemo
-    CompactNSearch
-)
-
 if(OpenMP_CXX_FOUND)
     target_link_libraries(fluidsim
-        OpenMP::OpenMP_CXX
-    )
-
-    target_link_libraries(nsearchDemo
         OpenMP::OpenMP_CXX
     )
 endif(OpenMP_CXX_FOUND)
 
 if (BUILD_CUDA)
-  add_executable(cuNSearchDemo cuNSearchMain.cu)
-  target_link_libraries(cuNSearchDemo
-      cuNSearch
-  )
 endif (BUILD_CUDA)
 
 #-------------------------------------------------------------------------------
