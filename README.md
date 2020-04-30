@@ -92,3 +92,5 @@ Here is our plan with scheduling the following four weeks for our final project:
 6. https://github.com/InteractiveComputerGraphics/SPlisHSPlasH by InteractiveComputerGraphics
 7. Eurographics Tutorial 2019 by InteractiveComputerGraphics @ https://interactivecomputergraphics.github.io/SPH-Tutorial/
 8. Stanford CS 348C assignment page (section Tuning parameters is super helpful!) @ http://graphics.stanford.edu/courses/cs348c/PA1_PBF2016/index.html
+9. Polygonising a scalar field (marching Cube implementaion tutorial) by Paul Bourke
+http://paulbourke.net/geometry/polygonise/
