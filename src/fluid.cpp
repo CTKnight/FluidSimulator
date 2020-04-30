@@ -13,10 +13,10 @@
 using namespace std;
 
 Fluid::Fluid(
-    unique_ptr<vector<Triad>> &&particle_positions,
-    unique_ptr<vector<Triad>> &&particle_velocities,
-    double h
-): nsearch(h, true) {
+    unique_ptr<vector<REAL3>> &&particle_positions,
+    unique_ptr<vector<REAL3>> &&particle_velocities,
+    REAL h
+): nsearch(h) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
@@ -31,10 +31,10 @@ void Fluid::init() {
     }
     this->particle_velocities = std::move(particle_velocities);
   } else {
-    auto velocities = make_unique<vector<Triad>>();
+    auto velocities = make_unique<vector<REAL3>>();
     velocities->resize(this->particle_positions->size());
     // Init to 0
-    memset(velocities->data(), 0, sizeof(Fluid::Triad)*num_particle);
+    memset(velocities->data(), 0, sizeof(Fluid::REAL3)*num_particle);
     this->particle_velocities = std::move(velocities);
   }
   this->particle_preditced_positions.resize(num_particle);
@@ -51,15 +51,15 @@ void Fluid::init() {
 }
 
 void Fluid::simulate(
-  double frames_per_sec, double simulation_steps, 
+  REAL frames_per_sec, REAL simulation_steps, 
   const std::shared_ptr<FluidParameters> &cp, vector<CollisionObject *> *collision_objects
 ) {
   double delta_t = 1.0f / frames_per_sec / simulation_steps;
-  auto &particle_positions = triadAsVector3R(*this->particle_positions);
+  auto &particle_positions = REAL3AsVector3R(*this->particle_positions);
   const auto num_particle = particle_positions.size();
-  auto &particle_velocities = triadAsVector3R(*this->particle_velocities);
-  auto &preditced_positions = triadAsVector3R(this->particle_preditced_positions);
-  auto &delta_p = triadAsVector3R(this->delta_p);
+  auto &particle_velocities = REAL3AsVector3R(*this->particle_velocities);
+  auto &preditced_positions = REAL3AsVector3R(this->particle_preditced_positions);
+  auto &delta_p = REAL3AsVector3R(this->delta_p);
   const auto density = cp->density;
   const auto particle_mass = cp->particle_mass;
   const auto damping = cp->damping;
@@ -184,35 +184,35 @@ void Fluid::simulate(
   }
 
   // line 23: update position
-  memcpy(particle_positions.data(), preditced_positions.data(), sizeof(Fluid::Triad)*num_particle);
+  memcpy(particle_positions.data(), preditced_positions.data(), sizeof(Fluid::REAL3)*num_particle);
 }
 
 void Fluid::reset() {
 
 }
 
-inline Vector3R &triadAsVector3R(Fluid::Triad &triad) {
-  return reinterpret_cast<Vector3R &>(triad);
+inline Vector3R &REAL3AsVector3R(Fluid::REAL3 &REAL3) {
+  return reinterpret_cast<Vector3R &>(REAL3);
 }
 
-inline const Vector3R &triadAsVector3R(const Fluid::Triad &triad) {
-  return reinterpret_cast<const Vector3R &>(triad);
+inline const Vector3R &REAL3AsVector3R(const Fluid::REAL3 &REAL3) {
+  return reinterpret_cast<const Vector3R &>(REAL3);
 }
 
-inline vector<Vector3R> &triadAsVector3R(vector<Fluid::Triad> &triads) {
-  return reinterpret_cast<vector<Vector3R> &>(triads);
+inline vector<Vector3R> &REAL3AsVector3R(vector<Fluid::REAL3> &REAL3s) {
+  return reinterpret_cast<vector<Vector3R> &>(REAL3s);
 }
 
-inline const vector<Vector3R> &triadAsVector3R(const vector<Fluid::Triad> &triads) {
-  return reinterpret_cast<const vector<Vector3R> &>(triads);
+inline const vector<Vector3R> &REAL3AsVector3R(const vector<Fluid::REAL3> &REAL3s) {
+  return reinterpret_cast<const vector<Vector3R> &>(REAL3s);
 }
 
-std::istream& operator>>(std::istream& is, Fluid::Triad& v) {
+std::istream& operator>>(std::istream& is, Fluid::REAL3& v) {
   is >> v[0] >> v[1] >> v[2];
   return is;
 }
 
-std::ostream& operator<<(std::ostream& os, const Fluid::Triad& v) {
+std::ostream& operator<<(std::ostream& os, const Fluid::REAL3& v) {
   os << v[0] << ' ' << v[1] << ' ' << v[2];
   return os;
 }

@@ -111,6 +111,9 @@ if(OpenMP_CXX_FOUND)
 endif(OpenMP_CXX_FOUND)
 
 if (BUILD_CUDA)
+    target_link_libraries(fluidsim
+        cuNSearch
+    )
     # Cloth simulation source
     add_executable(fluidsimCuda ${FLUIDSIM_CUDA_SOURCE})
     target_link_libraries(fluidsimCuda

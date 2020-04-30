@@ -95,7 +95,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
     throw std::runtime_error("Fluid shape should be an array");
   }
 
-  unique_ptr<vector<Fluid::Triad>> particles = make_unique<vector<Fluid::Triad>>();
+  unique_ptr<vector<Fluid::REAL3>> particles = make_unique<vector<Fluid::REAL3>>();
   for (const auto &el: shape) {
     string type = el["type"];
     if (type == "cube") {
@@ -104,7 +104,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
       for (REAL i = origin[0] + cube_size_per_particle/2; i < origin[0] + size[0]; i += cube_size_per_particle) {
         for (REAL j = origin[1] + cube_size_per_particle/2; j < origin[1] + size[1]; j += cube_size_per_particle) {
           for (REAL k = origin[2] + cube_size_per_particle/2; k < origin[2] + size[2]; k += cube_size_per_particle) {
-            particles->emplace_back(Fluid::Triad{i, j, k});
+            particles->emplace_back(Fluid::REAL3{i, j, k});
           }
         }
       }
@@ -116,7 +116,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
         for (REAL j = origin[1]-radius + cube_size_per_particle/2; j < origin[1]+radius; j += cube_size_per_particle) {
           for (REAL k = origin[2]-radius + cube_size_per_particle/2; k < origin[2]+radius; k += cube_size_per_particle) {
             if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
-              particles->emplace_back(Fluid::Triad{i, j, k});
+              particles->emplace_back(Fluid::REAL3{i, j, k});
             }
           }
         }
