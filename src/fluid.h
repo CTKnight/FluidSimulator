@@ -21,16 +21,16 @@ struct FluidParameters {
   FluidParameters()=default;
   FluidParameters(const FluidParameters& other)=default;
   FluidParameters(
-    double density,
-    double particle_mass,
-    double damping,
-    double h,
-    double epsilon,
-    double n,
-    double k,
-    double c,
+    REAL density,
+    REAL particle_mass,
+    REAL damping,
+    REAL h,
+    REAL epsilon,
+    REAL n,
+    REAL k,
+    REAL c,
     int solverIterations = 4,
-    double particleRadius = 0.02)
+    REAL particleRadius = 0.02)
       : density(density), particle_mass(particle_mass), damping(damping),
         h(h), epsilon(epsilon), n(n), k(k), c(c),
         solverIterations(solverIterations), particleRadius(particleRadius) {}
@@ -38,21 +38,21 @@ struct FluidParameters {
 
   // Global simulation parameters
   Vector3R external_forces;
-  double damping;
-  double particle_mass;
-  double h;
-  double epsilon;
-  double n;
-  double k;
-  double c;
+  REAL damping;
+  REAL particle_mass;
+  REAL h;
+  REAL epsilon;
+  REAL n;
+  REAL k;
+  REAL c;
   // unit: kg/m^3
-  double density;
+  REAL density;
   int solverIterations;
 
   // render parameters
 
   // unit: m
-  double particleRadius;
+  REAL particleRadius;
 };
 
 // default parameter: http://graphics.stanford.edu/courses/cs348c/PA1_PBF2016/index.html
@@ -61,11 +61,11 @@ struct Fluid {
   Fluid(
     unique_ptr<vector<Triad>> &&particle_positions, 
     unique_ptr<vector<Triad>> &&particle_velocities,
-    double h
+    REAL h
   );
   ~Fluid() = default;
   void init();
-  void simulate(double frames_per_sec, double simulation_steps,
+  void simulate(REAL frames_per_sec, REAL simulation_steps,
                 const std::shared_ptr<FluidParameters> &cp, 
                 vector<CollisionObject *> *collision_objects);
 
@@ -88,7 +88,7 @@ private:
   // internal data
   vector<Triad> particle_preditced_positions;
   vector<Triad> delta_p;
-  vector<double> lambda;
+  vector<REAL> lambda;
 
   CompactNSearch::NeighborhoodSearch nsearch;
   vector<vector<vector<unsigned int>>> neighbor_search_results;
@@ -99,7 +99,7 @@ inline const Vector3R &triadAsVector3R(const Fluid::Triad &triad);
 inline vector<Vector3R> &triadAsVector3R(vector<Fluid::Triad> &triads);
 inline const vector<Vector3R> &triadAsVector3R(const vector<Fluid::Triad> &triads);
 
-inline double W_poly6(const Vector3R &r, double h) {
+inline REAL W_poly6(const Vector3R &r, REAL h) {
   const auto r2 = r.norm2();
   const auto h2 = pow(h, 2);
   if (r2 > h2) {
@@ -109,7 +109,7 @@ inline double W_poly6(const Vector3R &r, double h) {
 }
 
 // https://www.wolframalpha.com/input/?i=gradient+15%2F%28PI*h%5E6%29*%28h-x%29%5E3
-inline double W_spiky_gradient(const Vector3R &r_vec, double h) {
+inline REAL W_spiky_gradient(const Vector3R &r_vec, REAL h) {
   const auto r = r_vec.norm();
   if (r > h) {
     return 0;
@@ -117,7 +117,7 @@ inline double W_spiky_gradient(const Vector3R &r_vec, double h) {
   return -45 / (PI * pow(h, 6)) * pow(h - r, 2);
 }
 
-inline double W_viscosity(const Vector3R &r_vec, double h) {
+inline REAL W_viscosity(const Vector3R &r_vec, REAL h) {
   const auto r = r_vec.norm();
   if (r > h) {
     return 0;
