@@ -18,51 +18,14 @@
 #include "marchingCube.h"
 #include "real.h"
 #include "vector3R.h"
+#include "fluidParameters.h"
 
 using namespace CGL;
 using namespace std;
 
-struct FluidParameters {
-  FluidParameters()=default;
-  FluidParameters(const FluidParameters& other)=default;
-  FluidParameters(
-    REAL density,
-    REAL particle_mass,
-    REAL damping,
-    REAL h,
-    REAL epsilon,
-    REAL n,
-    REAL k,
-    REAL c,
-    int solverIterations = 4,
-    REAL particleRadius = 0.02)
-      : density(density), particle_mass(particle_mass), damping(damping),
-        h(h), epsilon(epsilon), n(n), k(k), c(c),
-        solverIterations(solverIterations), particleRadius(particleRadius) {}
-  ~FluidParameters() {}
-
-  // Global simulation parameters
-  Vector3R external_forces;
-  REAL damping;
-  REAL particle_mass;
-  REAL h;
-  REAL epsilon;
-  REAL n;
-  REAL k;
-  REAL c;
-  // unit: kg/m^3
-  REAL density;
-  int solverIterations;
-
-  // render parameters
-
-  // unit: m
-  REAL particleRadius;
-};
-
 // default parameter: http://graphics.stanford.edu/courses/cs348c/PA1_PBF2016/index.html
 struct Fluid {
-  using REAL3 = array<REAL, 3>;
+  using REAL3 = REAL3;
   Fluid(
     unique_ptr<vector<REAL3>> &&particle_positions, 
     unique_ptr<vector<REAL3>> &&particle_velocities,
