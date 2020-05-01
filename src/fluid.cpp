@@ -1,5 +1,6 @@
 #include <iomanip>
 #include <iostream>
+#include <string>
 #include <math.h>
 #include <random>
 #include <vector>
