@@ -25,7 +25,6 @@ using namespace std;
 
 // default parameter: http://graphics.stanford.edu/courses/cs348c/PA1_PBF2016/index.html
 struct Fluid {
-  using REAL3 = REAL3;
   Fluid(
     unique_ptr<vector<REAL3>> &&particle_positions, 
     unique_ptr<vector<REAL3>> &&particle_velocities,
@@ -66,10 +65,10 @@ private:
   vector<vector<vector<unsigned int>>> neighbor_search_results;
 };
 
-inline Vector3R &REAL3AsVector3R(Fluid::REAL3 &REAL3);
-inline const Vector3R &REAL3AsVector3R(const Fluid::REAL3 &REAL3);
-inline vector<Vector3R> &REAL3AsVector3R(vector<Fluid::REAL3> &REAL3s);
-inline const vector<Vector3R> &REAL3AsVector3R(const vector<Fluid::REAL3> &REAL3s);
+inline Vector3R &REAL3AsVector3R(REAL3 &REAL3);
+inline const Vector3R &REAL3AsVector3R(const REAL3 &REAL3);
+inline vector<Vector3R> &REAL3AsVector3R(vector<REAL3> &REAL3s);
+inline const vector<Vector3R> &REAL3AsVector3R(const vector<REAL3> &REAL3s);
 
 inline REAL W_poly6(const Vector3R &r, REAL h) {
   const auto r2 = r.norm2();
@@ -97,8 +96,8 @@ inline REAL W_viscosity(const Vector3R &r_vec, REAL h) {
   return 15 / (2 * PI * pow(h, 3)) * ( -pow(r,3)/(2*pow(h,3)) + pow(r/h, 2) + (h/(2*r)) - 1);
 }
 
-std::istream& operator>>(std::istream& is, Fluid::REAL3& v);
-std::ostream& operator<<(std::ostream& os, const Fluid::REAL3& v);
+std::istream& operator>>(std::istream& is, REAL3& v);
+std::ostream& operator<<(std::ostream& os, const REAL3& v);
 std::istream& operator>>(std::istream& is, Fluid& fluid);
 std::ostream& operator<<(std::ostream& os, const Fluid& fluid);
 

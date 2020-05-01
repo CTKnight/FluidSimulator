@@ -34,7 +34,7 @@ void Fluid::init() {
     auto velocities = make_unique<vector<REAL3>>();
     velocities->resize(this->particle_positions->size());
     // Init to 0
-    memset(velocities->data(), 0, sizeof(Fluid::REAL3)*num_particle);
+    memset(velocities->data(), 0, sizeof(REAL3)*num_particle);
     this->particle_velocities = std::move(velocities);
   }
   this->particle_preditced_positions.resize(num_particle);
@@ -193,35 +193,35 @@ void Fluid::simulate(
   }
 
   // line 23: update position
-  memcpy(particle_positions.data(), preditced_positions.data(), sizeof(Fluid::REAL3)*num_particle);
+  memcpy(particle_positions.data(), preditced_positions.data(), sizeof(REAL3)*num_particle);
 }
 
 void Fluid::reset() {
 
 }
 
-inline Vector3R &REAL3AsVector3R(Fluid::REAL3 &REAL3) {
+inline Vector3R &REAL3AsVector3R(REAL3 &REAL3) {
   return reinterpret_cast<Vector3R &>(REAL3);
 }
 
-inline const Vector3R &REAL3AsVector3R(const Fluid::REAL3 &REAL3) {
+inline const Vector3R &REAL3AsVector3R(const REAL3 &REAL3) {
   return reinterpret_cast<const Vector3R &>(REAL3);
 }
 
-inline vector<Vector3R> &REAL3AsVector3R(vector<Fluid::REAL3> &REAL3s) {
+inline vector<Vector3R> &REAL3AsVector3R(vector<REAL3> &REAL3s) {
   return reinterpret_cast<vector<Vector3R> &>(REAL3s);
 }
 
-inline const vector<Vector3R> &REAL3AsVector3R(const vector<Fluid::REAL3> &REAL3s) {
+inline const vector<Vector3R> &REAL3AsVector3R(const vector<REAL3> &REAL3s) {
   return reinterpret_cast<const vector<Vector3R> &>(REAL3s);
 }
 
-std::istream& operator>>(std::istream& is, Fluid::REAL3& v) {
+std::istream& operator>>(std::istream& is, REAL3& v) {
   is >> v[0] >> v[1] >> v[2];
   return is;
 }
 
-std::ostream& operator<<(std::ostream& os, const Fluid::REAL3& v) {
+std::ostream& operator<<(std::ostream& os, const REAL3& v) {
   os << v[0] << ' ' << v[1] << ' ' << v[2];
   return os;
 }
