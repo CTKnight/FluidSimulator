@@ -40,8 +40,6 @@ set(FLUIDSIM_CUDA_SOURCE
     misc/sphere_drawing.cpp
     misc/file_utils.cpp
 
-    # Camera
-    camera.cpp
 )
 
 # Windows-only sources
@@ -111,16 +109,29 @@ if(OpenMP_CXX_FOUND)
 endif(OpenMP_CXX_FOUND)
 
 if (BUILD_CUDA)
+    enable_language(CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+    include_directories(
+        ${CGL_INCLUDE_DIRS}
+    )
     target_link_libraries(fluidsim
         cuNSearch
     )
+    list(APPEND FLUIDSIM_CUDA_SOURCE
+        # For get-opt
+        cuda/cudaFluid.cu
+    )
     # Cloth simulation source
     add_executable(fluidsimCuda ${FLUIDSIM_CUDA_SOURCE})
+    set_target_properties(fluidsimCuda PROPERTIES
+                            CUDA_SEPERABLE_COMPILATION ON)
     target_link_libraries(fluidsimCuda
         CGL ${CGL_LIBRARIES}
         ${CMAKE_THREADS_INIT}
         CompactNSearch
         cuNSearch
+        ${CUDA_LIBRARIES}
     )
 endif (BUILD_CUDA)
 
