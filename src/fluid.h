@@ -68,30 +68,4 @@ inline const Vector3R &REAL3AsVector3R(const REAL3 &REAL3);
 inline vector<Vector3R> &REAL3AsVector3R(vector<REAL3> &REAL3s);
 inline const vector<Vector3R> &REAL3AsVector3R(const vector<REAL3> &REAL3s);
 
-inline REAL W_poly6(const Vector3R &r, REAL h) {
-  const auto r2 = r.norm2();
-  const auto h2 = pow(h, 2);
-  if (r2 > h2) {
-    return 0;
-  }
-  return 315 / (64 * PI * pow(h, 9)) * pow(h2 - r2, 3);
-}
-
-// https://www.wolframalpha.com/input/?i=gradient+15%2F%28PI*h%5E6%29*%28h-x%29%5E3
-inline REAL W_spiky_gradient(const Vector3R &r_vec, REAL h) {
-  const auto r = r_vec.norm();
-  if (r > h) {
-    return 0;
-  }
-  return -45 / (PI * pow(h, 6)) * pow(h - r, 2);
-}
-
-inline REAL W_viscosity(const Vector3R &r_vec, REAL h) {
-  const auto r = r_vec.norm();
-  if (r > h) {
-    return 0;
-  }
-  return 15 / (2 * PI * pow(h, 3)) * ( -pow(r,3)/(2*pow(h,3)) + pow(r/h, 2) + (h/(2*r)) - 1);
-}
-
 #endif /* FLUID_H */
