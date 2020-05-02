@@ -73,7 +73,7 @@ void Fluid::simulate(
   #pragma omp parallel for
   for (int i = 0; i < num_particle; i++) {
     // line 2: apply forces
-      particle_velocities[i] += external_accelerations * delta_t;
+    particle_velocities[i] += external_accelerations * delta_t;
     // line 3: predict positions
     preditced_positions[i] = particle_positions[i] + particle_velocities[i] * delta_t;
   }
@@ -197,20 +197,4 @@ void Fluid::simulate(
 
 void Fluid::reset() {
 
-}
-
-inline Vector3R &REAL3AsVector3R(REAL3 &REAL3) {
-  return reinterpret_cast<Vector3R &>(REAL3);
-}
-
-inline const Vector3R &REAL3AsVector3R(const REAL3 &REAL3) {
-  return reinterpret_cast<const Vector3R &>(REAL3);
-}
-
-inline vector<Vector3R> &REAL3AsVector3R(vector<REAL3> &REAL3s) {
-  return reinterpret_cast<vector<Vector3R> &>(REAL3s);
-}
-
-inline const vector<Vector3R> &REAL3AsVector3R(const vector<REAL3> &REAL3s) {
-  return reinterpret_cast<const vector<Vector3R> &>(REAL3s);
 }

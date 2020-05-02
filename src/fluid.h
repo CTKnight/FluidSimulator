@@ -63,9 +63,4 @@ private:
   vector<vector<vector<unsigned int>>> neighbor_search_results;
 };
 
-inline Vector3R &REAL3AsVector3R(REAL3 &REAL3);
-inline const Vector3R &REAL3AsVector3R(const REAL3 &REAL3);
-inline vector<Vector3R> &REAL3AsVector3R(vector<REAL3> &REAL3s);
-inline const vector<Vector3R> &REAL3AsVector3R(const vector<REAL3> &REAL3s);
-
 #endif /* FLUID_H */

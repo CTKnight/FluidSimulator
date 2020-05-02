@@ -4,6 +4,9 @@
 
 #include "real.h"
 #include <cmath>
+#include <vector>
+
+using namespace std;
 
 /**
  * Defines 3D vectors of REAL version from CGL Vector3D
@@ -148,5 +151,30 @@ inline Vector3R cross( const Vector3R& u, const Vector3R& v ) {
 
 // prints components
 std::ostream& operator<<( std::ostream& os, const Vector3R& v );
+
+
+inline Vector3R &REAL3AsVector3R(REAL3 &REAL3) {
+  return reinterpret_cast<Vector3R &>(REAL3);
+}
+
+inline const Vector3R &REAL3AsVector3R(const REAL3 &REAL3) {
+  return reinterpret_cast<const Vector3R &>(REAL3);
+}
+
+inline vector<Vector3R> &REAL3AsVector3R(vector<REAL3> &REAL3s) {
+  return reinterpret_cast<vector<Vector3R> &>(REAL3s);
+}
+
+inline const vector<Vector3R> &REAL3AsVector3R(const vector<REAL3> &REAL3s) {
+  return reinterpret_cast<const vector<Vector3R> &>(REAL3s);
+}
+
+inline Vector3R *REAL3AsVector3R(REAL3 *REAL3s) {
+  return reinterpret_cast<Vector3R *>(REAL3s);
+}
+
+inline const Vector3R *REAL3AsVector3R(const REAL3 *REAL3s) {
+  return reinterpret_cast<const Vector3R *>(REAL3s);
+}
 
 #endif // CGL_Vector3R_H
