@@ -4,13 +4,13 @@
 
 #ifdef BUILD_CUDA
 
-__host__ __device__ void functiona() {
-  
+__host__ __device__ void simulate_update_position() {
+
 }
 
 Fluid_cuda::Fluid_cuda(
   unique_ptr<vector<REAL3>> &&particle_positions,
-  double h
+  REAL h
 ): nsearch(h) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
@@ -60,6 +60,11 @@ void Fluid_cuda::init() {
   }
   cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host, sizeof(int *) * num_particle, cudaMemcpyHostToDevice);
 }
+
+void Fluid_cuda::simulate(REAL frames_per_sec, REAL simulation_steps,
+  const FluidParameters *cp,
+  vector<CollisionObject *> *collision_objects) {
+  
 }
 
 #endif

@@ -21,11 +21,11 @@ class Fluid_cuda {
   public:
   Fluid_cuda(
     unique_ptr<vector<REAL3>> &&particle_positions,
-    double h
+    REAL h
   );
   ~Fluid_cuda();
   void init();
-  void simulate(double frames_per_sec, double simulation_steps,
+  void simulate(REAL frames_per_sec, REAL simulation_steps,
                 const FluidParameters *cp,
                 vector<CollisionObject *> *collision_objects);
 
@@ -36,8 +36,6 @@ class Fluid_cuda {
   const vector<REAL3> &getParticlePositions() const {
     return *particle_positions;
   }
-
-  // __device__ void scramble();
 
   // Fluid properties
 
