@@ -15,7 +15,7 @@ public:
   Vector3R point;
   Vector3R normal;
 
-  double friction;
+  REAL friction;
 };
 
 #endif /* COLLISIONOBJECT_PLANE_H */

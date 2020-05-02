@@ -1,5 +1,9 @@
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <memory>
+
 #include "../main.h"
-#include "cudaFluid.h"
+#include "cudaFluid.cuh"
 #include "../collision/plane.h"
 #include "../collision/sphere.h"
 
@@ -20,7 +24,7 @@ int main(int argc, char **argv) {
   
   shared_ptr<Fluid> fluid;
   shared_ptr<FluidParameters> fp = make_shared<FluidParameters>();
-  vector<CollisionObject *> objects;
+  vector<CollisionObject *> objects_std;
   
   int c;
   
@@ -29,6 +33,8 @@ int main(int argc, char **argv) {
 
   std::string particle_foldername_to_output;
   int sec = 1;
+  constexpr int frames_per_sec = 120;
+  constexpr int simulation_steps = 1;
   
   while ((c = getopt (argc, argv, "f:r:p:s:")) != -1) {
     switch (c) {
@@ -72,8 +78,37 @@ int main(int argc, char **argv) {
     }
   }
 
+  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects_std);
   
+  if (!success) {
+    std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
+    exit(-1);
+  }
 
+  unique_ptr<vector<REAL3>> position_fluid_cuda = make_unique<vector<REAL3>>(fluid->getParticlePositions());
+  shared_ptr<Fluid_cuda> fluid_cuda = make_shared<Fluid_cuda>(std::move(position_fluid_cuda), fp->h);
+  FluidParameters *fp_dev;
+
+  int n = 0;
+  if (particle_folder_to_output_good) {
+    writeFluidToFileN(particle_foldername_to_output, n, *fluid_cuda);
+  }
+  n++;
+  for (int i = 0; i < sec; i++) {
+    for (int frame = 0; frame < frames_per_sec; frame++) {
+      const auto start = chrono::high_resolution_clock::now(); 
+      for (int i = 0; i < simulation_steps; i++) {
+        fluid->simulate(frames_per_sec, simulation_steps, fp, nullptr);
+      }
+      const auto end = chrono::high_resolution_clock::now();
+      const auto duration = chrono::duration_cast<chrono::milliseconds>(end-start);
+      cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " ms." << endl; 
+      if (particle_folder_to_output_good) {
+        writeFluidToFileN(particle_foldername_to_output, n, *fluid_cuda);
+      }
+      n++;
+    }
+  }
   return 0;  
 }
 

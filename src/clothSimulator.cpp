@@ -251,8 +251,8 @@ void ClothSimulator::simulate() {
       fluid->simulate(frames_per_sec, simulation_steps, fp, collision_objects);
     }
     const auto end = chrono::high_resolution_clock::now();
-    const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
-    cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " micro sec." << endl; 
+    const auto duration = chrono::duration_cast<chrono::milliseconds>(end-start);
+    cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " ms." << endl; 
 }
 
 void ClothSimulator::drawContents(bool shouldSimulate) {

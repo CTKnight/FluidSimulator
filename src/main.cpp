@@ -310,6 +310,7 @@ int main(int argc, char **argv) {
   
   if (!success) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
+    exit(-1);
   }
 
   bool particle_folder_to_output_good = false;

@@ -21,8 +21,13 @@
 #include "collision/plane.h"
 #include "collision/sphere.h"
 #include "fluid.h"
+#include "fluid_io.h"
 #include "misc/file_utils.h"
 #include "real.h"
+
+#ifdef BUILD_CUDA
+#include "cuda/cudaFluid.cuh"
+#endif
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -212,5 +217,17 @@ void writeFluidToFileN(const string &particle_foldername_to_output, int n, const
   }
   particle_file_to_output.close();
 }
+#ifdef BUILD_CUDA
+void writeFluidToFileN(const string &particle_foldername_to_output, int n, const Fluid_cuda &fluid) {
+  const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
+  ofstream particle_file_to_output(output_filename);
+  if (particle_file_to_output) {
+    particle_file_to_output << fluid;
+  } else {
+    throw std::runtime_error(output_filename + string(" is not good to write!"));
+  }
+  particle_file_to_output.close();
+}
+#endif
 
 #endif

@@ -12,8 +12,6 @@
 #include <CompactNSearch>
 #endif
 
-#include "CGL/CGL.h"
-#include "CGL/misc.h"
 #include "collision/collisionObject.h"
 #include "marchingCube.h"
 #include "real.h"
@@ -95,10 +93,5 @@ inline REAL W_viscosity(const Vector3R &r_vec, REAL h) {
   }
   return 15 / (2 * PI * pow(h, 3)) * ( -pow(r,3)/(2*pow(h,3)) + pow(r/h, 2) + (h/(2*r)) - 1);
 }
-
-std::istream& operator>>(std::istream& is, REAL3& v);
-std::ostream& operator<<(std::ostream& os, const REAL3& v);
-std::istream& operator>>(std::istream& is, Fluid& fluid);
-std::ostream& operator<<(std::ostream& os, const Fluid& fluid);
 
 #endif /* FLUID_H */

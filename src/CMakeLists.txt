@@ -40,6 +40,8 @@ set(FLUIDSIM_CUDA_SOURCE
     misc/sphere_drawing.cpp
     misc/file_utils.cpp
 
+    cuda/cudaFluid.cu
+    cuda/cudaFluid.cuh
 )
 
 # Windows-only sources
@@ -117,10 +119,6 @@ if (BUILD_CUDA)
     )
     target_link_libraries(fluidsim
         cuNSearch
-    )
-    list(APPEND FLUIDSIM_CUDA_SOURCE
-        # For get-opt
-        cuda/cudaFluid.cu
     )
     # Cloth simulation source
     add_executable(fluidsimCuda ${FLUIDSIM_CUDA_SOURCE})
