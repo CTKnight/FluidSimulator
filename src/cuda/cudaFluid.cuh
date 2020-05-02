@@ -25,7 +25,7 @@ class Fluid_cuda {
   );
   ~Fluid_cuda();
   void init();
-  void simulate(REAL frames_per_sec, REAL simulation_steps,
+  void simulate(REAL delta_t,
                 const FluidParameters *cp,
                 vector<CollisionObject *> *collision_objects);
 

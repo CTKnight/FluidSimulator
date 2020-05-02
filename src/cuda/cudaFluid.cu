@@ -1,8 +1,25 @@
-// #include <cuda>
-
 #include "cudaFluid.cuh"
+#include <cmath>
 
 #ifdef BUILD_CUDA
+
+inline __host__ __device__ REAL W_poly6_cuda(const Vector3R &r, REAL h) {
+  const auto r2 = r.norm2();
+  const auto h2 = pow(h, 2);
+  if (r2 > h2) {
+    return 0;
+  }
+  return 315 / (64 * M_PI * pow(h, 9)) * pow(h2 - r2, 3);
+}
+
+// https://www.wolframalpha.com/input/?i=gradient+15%2F%28PI*h%5E6%29*%28h-x%29%5E3
+inline __host__ __device__ REAL W_spiky_gradient_cuda(const Vector3R &r_vec, REAL h) {
+  const auto r = r_vec.norm();
+  if (r > h) {
+    return 0;
+  }
+  return -45 / (M_PI * pow(h, 6)) * pow(h - r, 2);
+}
 
 __host__ __device__ void simulate_update_position() {
 
@@ -52,8 +69,8 @@ void Fluid_cuda::init() {
   cudaMalloc(&neighbor_search_results_dev, sizeof(int *) * num_particle);
   neighbor_search_results_host = new int*[num_particle];
   // size, capacity(include overheads of this 2 meta-elements)
-  constexpr default_capacity = 50;
-  int[] init_search_result = {0, default_capacity};
+  constexpr int default_capacity = 50;
+  int init_search_result[] = {0, default_capacity};
   for (int i = 0; i < num_particle; i++) {
     cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*default_capacity);
     cudaMemcpy(neighbor_search_results_host[i], init_search_result, sizeof(int)*2, cudaMemcpyHostToDevice);
@@ -61,10 +78,9 @@ void Fluid_cuda::init() {
   cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host, sizeof(int *) * num_particle, cudaMemcpyHostToDevice);
 }
 
-void Fluid_cuda::simulate(REAL frames_per_sec, REAL simulation_steps,
+void Fluid_cuda::simulate(REAL delta_t,
   const FluidParameters *cp,
   vector<CollisionObject *> *collision_objects) {
-  
 }
 
 #endif
