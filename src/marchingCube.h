@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "CGL/CGL.h"
 #include "CGL/misc.h"
-#include "Vector3R.h"
+#include "vector3R.h"
 #include <CompactNSearch>
 #include <fstream>
 #include "real.h"

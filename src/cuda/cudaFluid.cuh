@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "cuNSearch.h"
+#include "cudaUtils.h"
 #include "../real.h"
 #include "../fluidParameters.h"
 #include "../collision/collisionObject.h"
@@ -50,7 +51,7 @@ class Fluid_cuda {
   int *num_particles_dev;
   REAL3 *particle_positions_device;
   REAL3 *particle_velocities_device;
-  REAL3 *particle_preditced_position_device;
+  REAL3 *particle_preditced_positions_device;
   REAL3 *delta_p_device;
   REAL *lambda_device;
 };

@@ -1,5 +1,6 @@
 #include "cudaFluid.cuh"
 #include <cmath>
+#include <cstdio>
 
 #ifdef BUILD_CUDA
 
@@ -21,8 +22,24 @@ inline __host__ __device__ REAL W_spiky_gradient_cuda(const Vector3R &r_vec, REA
   return -45 / (M_PI * pow(h, 6)) * pow(h - r, 2);
 }
 
-__host__ __device__ void simulate_update_position() {
-
+__global__ void simulate_update_position_predict_position(
+  int n,
+  Vector3R *particle_positions, 
+  Vector3R *particle_preditced_position, 
+  Vector3R *particle_velocities, 
+  const Vector3R &external_accelerations, 
+  REAL delta_t
+) {
+  printf("Thread 0 position: (%lf, %lf, %lf)", particle_positions[0].x, particle_positions[0].y, particle_positions[0].z);
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+    if (i == 0) {
+      // std::cout << "Thread 0 position: " << particle_positions[i].x << ", " << particle_positions[i].y <<", " << particle_positions[i].z << std::endl;
+    }
+    particle_velocities[i] += external_accelerations * delta_t;
+    particle_preditced_position[i] = particle_positions[i] + particle_velocities[i];
+    particle_positions[i].y += 1;
+ }
+ __syncthreads();
 }
 
 Fluid_cuda::Fluid_cuda(
@@ -38,7 +55,7 @@ Fluid_cuda::Fluid_cuda(
 Fluid_cuda::~Fluid_cuda(){
   cudaFree(particle_positions_device);
   cudaFree(particle_velocities_device);
-  cudaFree(particle_preditced_position_device);
+  cudaFree(particle_preditced_positions_device);
   cudaFree(delta_p_device);
   cudaFree(lambda_device);
   cudaFree(num_particles_dev);
@@ -53,13 +70,16 @@ Fluid_cuda::~Fluid_cuda(){
 
 void Fluid_cuda::init() {
   const auto num_particle = particle_positions->size();
-  const auto SIZE_REAL3_N = sizeof(REAL3) * num_particle; 
+  std::cout << "num_particles: " << num_particle << std::endl;
+  const auto SIZE_REAL3_N = sizeof(REAL3) * num_particle;
+
   cudaMalloc(&particle_positions_device, SIZE_REAL3_N);
+  cudaMemcpy(particle_positions_device, particle_positions->data(), SIZE_REAL3_N, cudaMemcpyHostToDevice);
 
   cudaMalloc(&particle_velocities_device, SIZE_REAL3_N);
   cudaMemset(particle_velocities_device, 0, SIZE_REAL3_N);
 
-  cudaMalloc(&particle_preditced_position_device, SIZE_REAL3_N);
+  cudaMalloc(&particle_preditced_positions_device, SIZE_REAL3_N);
   cudaMalloc(&delta_p_device, SIZE_REAL3_N);
   cudaMalloc(&lambda_device, sizeof(REAL)*num_particle);
 
@@ -76,11 +96,30 @@ void Fluid_cuda::init() {
     cudaMemcpy(neighbor_search_results_host[i], init_search_result, sizeof(int)*2, cudaMemcpyHostToDevice);
   }
   cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host, sizeof(int *) * num_particle, cudaMemcpyHostToDevice);
+  cudaDeviceSynchronize();
 }
 
 void Fluid_cuda::simulate(REAL delta_t,
-  const FluidParameters *cp,
+  const FluidParameters *fp,
   vector<CollisionObject *> *collision_objects) {
+  int num_particles = particle_positions->size();
+  const auto particle_positions_dev = REAL3AsVector3R(particle_positions_device);
+  const auto particle_preditced_positions = REAL3AsVector3R(particle_preditced_positions_device);
+  const auto particle_velocities = REAL3AsVector3R(particle_velocities_device);
+  simulate_update_position_predict_position<<<num_particles,1>>>(
+    num_particles,
+    particle_positions_dev, 
+    particle_preditced_positions, 
+    particle_velocities, 
+    fp->external_forces, delta_t
+  );
+
+  cudaDeviceSynchronize();
+
+  const auto SIZE_REAL3_N = sizeof(REAL3) * num_particles;
+  // copy result back to host
+  cudaMemcpy(particle_positions->data(), particle_positions_device, SIZE_REAL3_N, cudaMemcpyDeviceToHost);
+  cudaDeviceSynchronize();
 }
 
 #endif
