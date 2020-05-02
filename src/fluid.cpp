@@ -7,6 +7,7 @@
 #include "fluid.h"
 #include "collision/plane.h"
 #include "collision/sphere.h"
+#include "kernel.h"
 
 using namespace std;
 
