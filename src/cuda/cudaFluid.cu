@@ -47,13 +47,19 @@ void Fluid_cuda::init() {
   cudaMalloc(&lambda_device, sizeof(REAL)*num_particle);
 
   cudaMalloc(&num_particles_dev, sizeof(int));
-  cudaMemcpy(&num_particles_dev, &num_particle, sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(num_particles_dev, &num_particle, sizeof(int), cudaMemcpyHostToDevice);
 
   cudaMalloc(&neighbor_search_results_dev, sizeof(int *) * num_particle);
   neighbor_search_results_host = new int*[num_particle];
+  // size, capacity(include overheads of this 2 meta-elements)
+  constexpr default_capacity = 50;
+  int[] init_search_result = {0, default_capacity};
   for (int i = 0; i < num_particle; i++) {
-    cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*2);
+    cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*default_capacity);
+    cudaMemcpy(neighbor_search_results_host[i], init_search_result, sizeof(int)*2, cudaMemcpyHostToDevice);
   }
+  cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host, sizeof(int *) * num_particle, cudaMemcpyHostToDevice);
+}
 }
 
 #endif
