@@ -115,7 +115,7 @@ if (BUILD_CUDA)
     include(CheckLanguage)
     check_language(CUDA)
     include_directories(
-        ${CGL_INCLUDE_DIRS}
+        ${CUDA_INCLUDE_DIRS}
     )
     target_link_libraries(fluidsim
         cuNSearch
