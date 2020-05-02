@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
 
   unique_ptr<vector<REAL3>> position_fluid_cuda = make_unique<vector<REAL3>>(fluid->getParticlePositions());
   shared_ptr<Fluid_cuda> fluid_cuda = make_shared<Fluid_cuda>(std::move(position_fluid_cuda), fp->h);
+  fluid_cuda->init();
   FluidParameters *fp_dev;
   cudaMalloc(((void**)&fp_dev), sizeof(FluidParameters));
   cudaMemcpy(fp_dev, fp.get(), sizeof(FluidParameters), cudaMemcpyHostToDevice);
@@ -105,8 +106,8 @@ int main(int argc, char **argv) {
         fluid_cuda->simulate(delta_t, fp_dev, nullptr);
       }
       const auto end = chrono::high_resolution_clock::now();
-      const auto duration = chrono::duration_cast<chrono::milliseconds>(end-start);
-      cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " ms." << endl; 
+      const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
+      cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " microsec." << endl; 
       if (particle_folder_to_output_good) {
         writeFluidToFileN(particle_foldername_to_output, n, *fluid_cuda);
       }

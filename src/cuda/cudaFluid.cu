@@ -30,14 +30,20 @@ __global__ void simulate_update_position_predict_position(
   const Vector3R &external_accelerations, 
   REAL delta_t
 ) {
-  printf("Thread 0 position: (%lf, %lf, %lf)", particle_positions[0].x, particle_positions[0].y, particle_positions[0].z);
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+    auto &positions_i = particle_positions[i];
+    auto &velocities_i = particle_velocities[i];
+    auto &preditced_positions_i = particle_preditced_position[i];
     if (i == 0) {
-      // std::cout << "Thread 0 position: " << particle_positions[i].x << ", " << particle_positions[i].y <<", " << particle_positions[i].z << std::endl;
+      printf("Thread 0 position: (%lf, %lf, %lf), acc: (%lf, %lf, %lf), delta_t: %lf\n", 
+        positions_i.x, positions_i.y, positions_i.z,
+        external_accelerations.x, external_accelerations.y, external_accelerations.z,
+        delta_t
+      );
     }
-    particle_velocities[i] += external_accelerations * delta_t;
-    particle_preditced_position[i] = particle_positions[i] + particle_velocities[i];
-    particle_positions[i].y += 1;
+    velocities_i += external_accelerations * delta_t;
+    preditced_positions_i = positions_i + velocities_i * delta_t;
+    positions_i = preditced_positions_i;
  }
  __syncthreads();
 }
@@ -70,7 +76,6 @@ Fluid_cuda::~Fluid_cuda(){
 
 void Fluid_cuda::init() {
   const auto num_particle = particle_positions->size();
-  std::cout << "num_particles: " << num_particle << std::endl;
   const auto SIZE_REAL3_N = sizeof(REAL3) * num_particle;
 
   cudaMalloc(&particle_positions_device, SIZE_REAL3_N);
