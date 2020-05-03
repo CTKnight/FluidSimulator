@@ -88,6 +88,7 @@ void Fluid::simulate(
     auto &pointSet = nsearch.point_set(0);
     auto count = pointSet.n_neighbors(0, i);
     neighbor_search_results[i].resize(1);
+    // TODO: refactor as cudaFluid.cu implemetation
     for (int j = 0; j < count; j++) {
       neighbor_search_results[i][0].emplace_back(pointSet.neighbor(0, i, j));
     }
