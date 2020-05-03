@@ -1,6 +1,8 @@
-#include "cudaFluid.cuh"
 #include <cmath>
 #include <cstdio>
+
+#include "cudaFluid.cuh"
+#include "../kernel.h"
 
 #ifdef BUILD_CUDA
 
@@ -182,25 +184,38 @@ void Fluid_cuda::simulate(REAL delta_t,
   const auto particle_positions_dev = REAL3AsVector3R(particle_positions_device);
   const auto particle_preditced_positions = REAL3AsVector3R(particle_preditced_positions_device);
   const auto particle_velocities = REAL3AsVector3R(particle_velocities_device);
+  const auto density = fp->density;
+  const auto particle_mass = fp->particle_mass;
+  const auto damping = fp->damping;
+  const auto solverIterations = fp->solverIterations;
+  const auto h = fp->h;
+  const auto epsilon = fp->epsilon;
+  const auto n = fp->n;
+  const auto k = fp->k;
+  const auto c = fp->c;
+  const Vector3R &external_accelerations = fp->external_forces;
+
   simulate_update_position_predict_position<<<num_particles,1>>>(
     num_particles,
     particle_positions_dev, 
     particle_preditced_positions, 
     particle_velocities, 
-    fp->external_forces, delta_t
+    external_accelerations, delta_t
   );
+
   find_neighbors();
+
   for (int iter = 0; iter < solverIterations; iter++) {
-    calculate_lambda<<<<num_particles,1>>>(
+    calculate_lambda<<<num_particles,1>>>(
       num_particles, 
       particle_positions_dev,
       neighbor_search_results_dev,
       neighbor_search_results_size_dev,
-      fp->particle_mass,
-      fp->density,
-      fp->epsilon,
-      fp->h,
-      lambda
+      particle_mass,
+      density,
+      epsilon,
+      h,
+      lambda_device
     );
   }
   const auto SIZE_REAL3_N = sizeof(REAL3) * num_particles;
