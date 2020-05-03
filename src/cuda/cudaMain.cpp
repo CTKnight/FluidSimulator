@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
     for (int frame = 0; frame < frames_per_sec; frame++) {
       const auto start = chrono::high_resolution_clock::now(); 
       for (int i = 0; i < simulation_steps; i++) {
-        fluid_cuda->simulate(delta_t, fp_dev, nullptr);
+        fluid_cuda->simulate(delta_t, fp.get(), nullptr);
       }
       const auto end = chrono::high_resolution_clock::now();
       const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
