@@ -28,6 +28,53 @@ __global__ void simulate_update_position_predict_position(
   }
 }
 
+__global__ void calculate_lambda(
+  int n,
+  Vector3R *particle_positions,
+  int **neighbor_search_results,
+  int *neighbor_results_size,
+  REAL particle_mass,
+  REAL density,
+  REAL epsilon,
+  REAL h,
+  REAL *lambda
+) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
+    const auto &p_i = particle_positions[i];
+    // line 10: calculate lambda
+    const int *neighbors_i = neighbor_search_results[i];
+    const int neighbors_size_i = neighbor_results_size[i];
+    // Eq 2
+    REAL rho_i = 0;
+    for (int jj = 0; jj <  neighbors_size_i; jj++) {
+      int j = neighbors_i[jj];
+      const auto &p_j = particle_positions[j];
+      rho_i += W_poly6(p_i-p_j, h);
+    }
+    // add itself
+    rho_i += W_poly6(p_i-p_i, h);
+    rho_i *= particle_mass;
+    // Eq 1
+    const REAL C_i = rho_i / density - 1.;
+    REAL C_i_p_k_2_sum = 0;
+    // Eq 8
+    // if k = j
+    REAL C_i_p_k_j_2 = 0;
+    // if k = i
+    Vector3R C_i_p_k_i;
+    for (int jj = 0; jj < neighbors_size_i; jj++) {
+      int j = neighbors_i[jj];
+      const auto &p_j = particle_positions[j];
+      const auto W_spiky_gradient_i_j = W_spiky_gradient(p_i-p_j, h) * (p_i-p_j);
+      C_i_p_k_i += W_spiky_gradient_i_j;
+      C_i_p_k_j_2 += W_spiky_gradient_i_j.norm2();
+    }
+    C_i_p_k_2_sum += C_i_p_k_i.norm2();
+    C_i_p_k_2_sum /= pow(density, 2);
+    lambda[i] = - C_i / (C_i_p_k_2_sum+epsilon);
+  }
+}
+
 void copy_predicted_positions_to_position(
   REAL3 *particle_position,
   REAL3 *particle_preditced_position, 
@@ -75,6 +122,7 @@ void Fluid_cuda::init() {
   cudaMalloc(&lambda_device, sizeof(REAL)*num_particles);
 
   cudaMalloc(&neighbor_search_results_dev, sizeof(int *) * num_particles);
+  cudaMalloc(&neighbor_search_results_size_dev, sizeof(int) * num_particles);
 
   neighbor_search_results_host.resize(num_particles);
   neighbor_search_results_size_host.resize(num_particles);
@@ -142,6 +190,19 @@ void Fluid_cuda::simulate(REAL delta_t,
     fp->external_forces, delta_t
   );
   find_neighbors();
+  for (int iter = 0; iter < solverIterations; iter++) {
+    calculate_lambda<<<<num_particles,1>>>(
+      num_particles, 
+      particle_positions_dev,
+      neighbor_search_results_dev,
+      neighbor_search_results_size_dev,
+      fp->particle_mass,
+      fp->density,
+      fp->epsilon,
+      fp->h,
+      lambda
+    );
+  }
   const auto SIZE_REAL3_N = sizeof(REAL3) * num_particles;
   copy_predicted_positions_to_position(particle_positions_device, particle_preditced_positions_device, SIZE_REAL3_N);
   // copy result back to host
