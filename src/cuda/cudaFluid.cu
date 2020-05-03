@@ -31,7 +31,8 @@ __global__ void simulate_update_position_predict_position(
 void copy_predicted_positions_to_position(
   REAL3 *particle_position,
   REAL3 *particle_preditced_position, 
-  size_t N) {
+  size_t N
+) {
   cudaMemcpy(particle_position, particle_preditced_position, N, cudaMemcpyDeviceToDevice);
 }
 
@@ -93,6 +94,7 @@ void Fluid_cuda::init() {
     cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*default_capacity);
   }
   cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host.data(), sizeof(int *) * num_particles, cudaMemcpyHostToDevice);
+  cudaMemcpy(neighbor_search_results_size_dev, neighbor_search_results_size_host.data(), sizeof(int) * num_particles, cudaMemcpyHostToDevice);
   cudaDeviceSynchronize();
   nsearch.add_point_set(
     this->particle_positions->front().data(), 
@@ -109,13 +111,20 @@ void Fluid_cuda::find_neighbors(){
     auto &pointSet = nsearch.point_set(0);
     auto count = pointSet.n_neighbors(0, i);
     int currentCap = neighbor_search_results_capacity_host[i];
+    // if it exceeds current device array capacity
     if (count > currentCap) {
       cudaFree(neighbor_search_results_host[i]);
       int newCap = static_cast<int>(count * 1.5);
       cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*newCap);
     }
+    // update size in host
+    neighbor_search_results_size_host[i] = count;
+    // copy into device
     cudaMemcpy(neighbor_search_results_host[i], pointSet.neighbor_list(0, i), sizeof(int)*count, cudaMemcpyHostToDevice);
   }
+  // update size to device
+  cudaMemcpy(neighbor_search_results_size_dev, neighbor_search_results_size_host.data(), sizeof(int) * num_particles, cudaMemcpyHostToDevice);
+  cudaDeviceSynchronize();
 }
 
 void Fluid_cuda::simulate(REAL delta_t,
