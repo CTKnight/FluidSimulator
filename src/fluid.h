@@ -51,7 +51,7 @@ private:
   unique_ptr<vector<REAL3>> particle_positions;
   unique_ptr<vector<REAL3>> particle_velocities;
   // internal data
-  vector<REAL3> particle_preditced_positions;
+  vector<REAL3> particle_predicted_positions;
   vector<REAL3> delta_p;
   vector<REAL> lambda;
 

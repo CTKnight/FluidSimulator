@@ -36,7 +36,7 @@ void Fluid::init() {
     memset(velocities->data(), 0, sizeof(REAL3)*num_particle);
     this->particle_velocities = std::move(velocities);
   }
-  this->particle_preditced_positions.resize(num_particle);
+  this->particle_predicted_positions.resize(num_particle);
   this->delta_p.resize(num_particle);
   this->lambda.resize(num_particle);
 
@@ -57,7 +57,7 @@ void Fluid::simulate(
   auto &particle_positions = REAL3AsVector3R(*this->particle_positions);
   const auto num_particle = particle_positions.size();
   auto &particle_velocities = REAL3AsVector3R(*this->particle_velocities);
-  auto &preditced_positions = REAL3AsVector3R(this->particle_preditced_positions);
+  auto &predicted_positions = REAL3AsVector3R(this->particle_predicted_positions);
   auto &delta_p = REAL3AsVector3R(this->delta_p);
   const auto density = cp->density;
   const auto particle_mass = cp->particle_mass;
@@ -75,7 +75,7 @@ void Fluid::simulate(
     // line 2: apply forces
     particle_velocities[i] += external_accelerations * delta_t;
     // line 3: predict positions
-    preditced_positions[i] = particle_positions[i] + particle_velocities[i] * delta_t;
+    predicted_positions[i] = particle_positions[i] + particle_velocities[i] * delta_t;
   }
 
   // update nsearch
@@ -156,14 +156,14 @@ void Fluid::simulate(
     #pragma omp parallel for
     for (int i = 0; i < num_particle; i++) {
       // line 17: update position
-      preditced_positions[i] += delta_p[i];
+      predicted_positions[i] += delta_p[i];
     }
   }
 
   #pragma omp parallel for
   for (int i = 0; i < num_particle; i++) {
     // line 21: update velocity
-    particle_velocities[i] = (preditced_positions[i] - particle_positions[i]) / delta_t;
+    particle_velocities[i] = (predicted_positions[i] - particle_positions[i]) / delta_t;
   }
 
   #pragma omp parallel for
@@ -193,7 +193,7 @@ void Fluid::simulate(
   }
 
   // line 23: update position
-  memcpy(particle_positions.data(), preditced_positions.data(), sizeof(REAL3)*num_particle);
+  memcpy(particle_positions.data(), predicted_positions.data(), sizeof(REAL3)*num_particle);
 }
 
 void Fluid::reset() {

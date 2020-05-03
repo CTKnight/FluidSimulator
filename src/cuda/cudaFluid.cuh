@@ -56,7 +56,7 @@ private:
 
   REAL3 *particle_positions_device;
   REAL3 *particle_velocities_device;
-  REAL3 *particle_preditced_positions_device;
+  REAL3 *particle_predicted_positions_device;
   REAL3 *delta_p_device;
   REAL *lambda_device;
 };
