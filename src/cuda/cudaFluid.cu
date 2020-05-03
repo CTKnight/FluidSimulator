@@ -4,24 +4,6 @@
 
 #ifdef BUILD_CUDA
 
-inline __host__ __device__ REAL W_poly6_cuda(const Vector3R &r, REAL h) {
-  const auto r2 = r.norm2();
-  const auto h2 = pow(h, 2);
-  if (r2 > h2) {
-    return 0;
-  }
-  return 315 / (64 * M_PI * pow(h, 9)) * pow(h2 - r2, 3);
-}
-
-// https://www.wolframalpha.com/input/?i=gradient+15%2F%28PI*h%5E6%29*%28h-x%29%5E3
-inline __host__ __device__ REAL W_spiky_gradient_cuda(const Vector3R &r_vec, REAL h) {
-  const auto r = r_vec.norm();
-  if (r > h) {
-    return 0;
-  }
-  return -45 / (M_PI * pow(h, 6)) * pow(h - r, 2);
-}
-
 __global__ void simulate_update_position_predict_position(
   int n,
   Vector3R *particle_positions, 
@@ -43,9 +25,14 @@ __global__ void simulate_update_position_predict_position(
     }
     velocities_i += external_accelerations * delta_t;
     preditced_positions_i = positions_i + velocities_i * delta_t;
-    positions_i = preditced_positions_i;
- }
- __syncthreads();
+  }
+}
+
+void copy_predicted_positions_to_position(
+  REAL3 *particle_position,
+  REAL3 *particle_preditced_position, 
+  size_t N) {
+  cudaMemcpy(particle_position, particle_preditced_position, N, cudaMemcpyDeviceToDevice);
 }
 
 Fluid_cuda::Fluid_cuda(
@@ -64,19 +51,17 @@ Fluid_cuda::~Fluid_cuda(){
   cudaFree(particle_preditced_positions_device);
   cudaFree(delta_p_device);
   cudaFree(lambda_device);
-  cudaFree(num_particles_dev);
-  const auto num_particle = particle_positions->size();
+  const auto num_particles = particle_positions->size();
 
-  for (int i = 0; i < num_particle; i++) {
+  for (int i = 0; i < num_particles; i++) {
     cudaFree(neighbor_search_results_host[i]);
   }
-  delete[] neighbor_search_results_host;
   cudaFree(neighbor_search_results_dev);
 }
 
 void Fluid_cuda::init() {
-  const auto num_particle = particle_positions->size();
-  const auto SIZE_REAL3_N = sizeof(REAL3) * num_particle;
+  const auto num_particles = particle_positions->size();
+  const auto SIZE_REAL3_N = sizeof(REAL3) * num_particles;
 
   cudaMalloc(&particle_positions_device, SIZE_REAL3_N);
   cudaMemcpy(particle_positions_device, particle_positions->data(), SIZE_REAL3_N, cudaMemcpyHostToDevice);
@@ -86,22 +71,51 @@ void Fluid_cuda::init() {
 
   cudaMalloc(&particle_preditced_positions_device, SIZE_REAL3_N);
   cudaMalloc(&delta_p_device, SIZE_REAL3_N);
-  cudaMalloc(&lambda_device, sizeof(REAL)*num_particle);
+  cudaMalloc(&lambda_device, sizeof(REAL)*num_particles);
 
-  cudaMalloc(&num_particles_dev, sizeof(int));
-  cudaMemcpy(num_particles_dev, &num_particle, sizeof(int), cudaMemcpyHostToDevice);
+  cudaMalloc(&neighbor_search_results_dev, sizeof(int *) * num_particles);
 
-  cudaMalloc(&neighbor_search_results_dev, sizeof(int *) * num_particle);
-  neighbor_search_results_host = new int*[num_particle];
-  // size, capacity(include overheads of this 2 meta-elements)
-  constexpr int default_capacity = 50;
-  int init_search_result[] = {0, default_capacity};
-  for (int i = 0; i < num_particle; i++) {
+  neighbor_search_results_host.resize(num_particles);
+  neighbor_search_results_size_host.resize(num_particles);
+  std::fill(
+    neighbor_search_results_size_host.begin(), 
+    neighbor_search_results_size_host.end(), 
+    0
+  );
+  neighbor_search_results_capacity_host.resize(num_particles);
+  std::fill(
+    neighbor_search_results_capacity_host.begin(), 
+    neighbor_search_results_capacity_host.end(), 
+    default_capacity
+  );
+
+  for (int i = 0; i < num_particles; i++) {
     cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*default_capacity);
-    cudaMemcpy(neighbor_search_results_host[i], init_search_result, sizeof(int)*2, cudaMemcpyHostToDevice);
   }
-  cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host, sizeof(int *) * num_particle, cudaMemcpyHostToDevice);
+  cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host.data(), sizeof(int *) * num_particles, cudaMemcpyHostToDevice);
   cudaDeviceSynchronize();
+  nsearch.add_point_set(
+    this->particle_positions->front().data(), 
+    this->particle_positions->size(), true, true
+  );
+  nsearch.find_neighbors();
+}
+
+void Fluid_cuda::find_neighbors(){
+  int num_particles = particle_positions->size();
+  nsearch.find_neighbors();
+  for (int i = 0; i < num_particles; i++) {
+    // line 6: find neighboring particles
+    auto &pointSet = nsearch.point_set(0);
+    auto count = pointSet.n_neighbors(0, i);
+    int currentCap = neighbor_search_results_capacity_host[i];
+    if (count > currentCap) {
+      cudaFree(neighbor_search_results_host[i]);
+      int newCap = static_cast<int>(count * 1.5);
+      cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*newCap);
+    }
+    cudaMemcpy(neighbor_search_results_host[i], pointSet.neighbor_list(0, i), sizeof(int)*count, cudaMemcpyHostToDevice);
+  }
 }
 
 void Fluid_cuda::simulate(REAL delta_t,
@@ -118,13 +132,11 @@ void Fluid_cuda::simulate(REAL delta_t,
     particle_velocities, 
     fp->external_forces, delta_t
   );
-
-  cudaDeviceSynchronize();
-
+  find_neighbors();
   const auto SIZE_REAL3_N = sizeof(REAL3) * num_particles;
+  copy_predicted_positions_to_position(particle_positions_device, particle_preditced_positions_device, SIZE_REAL3_N);
   // copy result back to host
   cudaMemcpy(particle_positions->data(), particle_positions_device, SIZE_REAL3_N, cudaMemcpyDeviceToHost);
-  cudaDeviceSynchronize();
 }
 
 #endif

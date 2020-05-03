@@ -3,8 +3,6 @@
 #ifndef FLUID_CUDA_H
 #define FLUID_CUDA_H
 
-#include <unordered_set>
-#include <unordered_map>
 #include <vector>
 #include <memory>
 #include <iomanip>
@@ -38,17 +36,24 @@ class Fluid_cuda {
     return *particle_positions;
   }
 
+private:
+
+  void find_neighbors();
   // Fluid properties
 
-// private:
   // Fluid components
   // input
   unique_ptr<vector<REAL3>> particle_positions;
+
   // internal data
+  static constexpr int default_capacity{50};
   cuNSearch::NeighborhoodSearch nsearch;
+  vector<int *> neighbor_search_results_host;
+  vector<int> neighbor_search_results_size_host;
+  vector<int> neighbor_search_results_capacity_host;
   int **neighbor_search_results_dev;
-  int **neighbor_search_results_host;
-  int *num_particles_dev;
+  int *neighbor_search_results_size_dev;
+
   REAL3 *particle_positions_device;
   REAL3 *particle_velocities_device;
   REAL3 *particle_preditced_positions_device;
