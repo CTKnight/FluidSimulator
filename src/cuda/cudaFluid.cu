@@ -33,8 +33,8 @@ __global__ void simulate_update_position_predict_position(
 __global__ void calculate_lambda(
   int n,
   Vector3R *particle_positions,
-  int **neighbor_search_results,
-  int *neighbor_results_size,
+  int *neighbor_search_results,
+  int *neighbor_search_results_size_prefix_sum,
   REAL particle_mass,
   REAL density,
   REAL epsilon,
@@ -44,8 +44,9 @@ __global__ void calculate_lambda(
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
     const auto &p_i = particle_positions[i];
     // line 10: calculate lambda
-    const int *neighbors_i = neighbor_search_results[i];
-    const int neighbors_size_i = neighbor_results_size[i];
+    const int neighbors_size_last = i == 0 ? 0 : neighbor_search_results_size_prefix_sum[i-1];
+    const int neighbors_size_i = neighbor_search_results_size_prefix_sum[i]-neighbors_size_last;
+    const int *neighbors_i = &neighbor_search_results[neighbors_size_last];
     // Eq 2
     REAL rho_i = 0;
     for (int jj = 0; jj <  neighbors_size_i; jj++) {
@@ -80,8 +81,8 @@ __global__ void calculate_lambda(
 __global__ void calculate_delta_pi_and_collision_response(
   int num_particles,
   Vector3R *particle_positions,
-  int **neighbor_search_results,
-  int *neighbor_results_size,
+  int *neighbor_search_results,
+  int *neighbor_search_results_size_prefix_sum,
   Vector3R *delta_p,
   REAL n,
   REAL k,
@@ -94,8 +95,9 @@ __global__ void calculate_delta_pi_and_collision_response(
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num_particles; i += blockDim.x * gridDim.x) {
     const auto &p_i = particle_positions[i];
     // line 13: calculate delta p_i
-    const int *neighbors_i = neighbor_search_results[i];
-    const int neighbors_size_i = neighbor_results_size[i];
+    const int neighbors_size_last = i == 0 ? 0 : neighbor_search_results_size_prefix_sum[i-1];
+    const int neighbors_size_i = neighbor_search_results_size_prefix_sum[i]-neighbors_size_last;
+    const int *neighbors_i = &neighbor_search_results[neighbors_size_last];
     delta_p[i] = 0;
     const auto lambda_i = lambda[i];
     // Eq 12
@@ -142,14 +144,15 @@ __global__ void apply_XSPH_viscosity(
   int num_particles,
   Vector3R *particle_positions,
   Vector3R *particle_velocities,
-  int **neighbor_search_results,
-  int *neighbor_results_size,
+  int *neighbor_search_results,
+  int *neighbor_search_results_size_prefix_sum,
   REAL particle_mass, REAL h, REAL c, REAL delta_t
 ) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num_particles; i += blockDim.x * gridDim.x) {
     const auto &p_i = particle_positions[i];
-    const int *neighbors_i = neighbor_search_results[i];
-    const int neighbors_size_i = neighbor_results_size[i];
+    const int neighbors_size_last = i == 0 ? 0 : neighbor_search_results_size_prefix_sum[i-1];
+    const int neighbors_size_i = neighbor_search_results_size_prefix_sum[i]-neighbors_size_last;
+    const int *neighbors_i = &neighbor_search_results[neighbors_size_last];
     // line 22: vorticity confinement and XSPH viscosity
     Vector3R f_vorticity;
     Vector3R omega_i;
@@ -197,12 +200,8 @@ Fluid_cuda::~Fluid_cuda(){
   cudaFree(particle_predicted_positions_device);
   cudaFree(delta_p_device);
   cudaFree(lambda_device);
-  const auto num_particles = particle_positions->size();
-
-  for (int i = 0; i < num_particles; i++) {
-    cudaFree(neighbor_search_results_host[i]);
-  }
   cudaFree(neighbor_search_results_dev);
+  cudaFree(neighbor_search_results_size_prefix_sum_dev);
 }
 
 void Fluid_cuda::init() {
@@ -219,28 +218,13 @@ void Fluid_cuda::init() {
   cudaMalloc(&delta_p_device, SIZE_REAL3_N);
   cudaMalloc(&lambda_device, sizeof(REAL)*num_particles);
 
-  cudaMalloc(&neighbor_search_results_dev, sizeof(int *) * num_particles);
-  cudaMalloc(&neighbor_search_results_size_dev, sizeof(int) * num_particles);
+  neighbor_search_results_dev_capacity = num_particles * default_capacity;
+  cudaMalloc(&neighbor_search_results_dev, sizeof(int) * neighbor_search_results_dev_capacity);
+  cudaMalloc(&neighbor_search_results_size_prefix_sum_dev, sizeof(int) * num_particles);
 
-  neighbor_search_results_host.resize(num_particles);
-  neighbor_search_results_size_host.resize(num_particles);
-  std::fill(
-    neighbor_search_results_size_host.begin(), 
-    neighbor_search_results_size_host.end(), 
-    0
-  );
-  neighbor_search_results_capacity_host.resize(num_particles);
-  std::fill(
-    neighbor_search_results_capacity_host.begin(), 
-    neighbor_search_results_capacity_host.end(), 
-    default_capacity
-  );
+  neighbor_search_results_host.resize(neighbor_search_results_dev_capacity);
+  neighbor_search_results_size_prefix_sum_host.resize(num_particles);
 
-  for (int i = 0; i < num_particles; i++) {
-    cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*default_capacity);
-  }
-  cudaMemcpy(neighbor_search_results_dev, neighbor_search_results_host.data(), sizeof(int *) * num_particles, cudaMemcpyHostToDevice);
-  cudaMemcpy(neighbor_search_results_size_dev, neighbor_search_results_size_host.data(), sizeof(int) * num_particles, cudaMemcpyHostToDevice);
   cudaDeviceSynchronize();
   nsearch.add_point_set(
     this->particle_positions->front().data(), 
@@ -252,25 +236,49 @@ void Fluid_cuda::init() {
 void Fluid_cuda::find_neighbors(){
   int num_particles = particle_positions->size();
   nsearch.find_neighbors();
+
+  // serial calculate prefix_sum
+  for (int i = 0; i < num_particles; i++) {
+    auto &pointSet = nsearch.point_set(0);
+    auto count = pointSet.n_neighbors(0, i);
+    const auto last_sum = i == 0 ? 0 :  neighbor_search_results_size_prefix_sum_host[i-1];
+    neighbor_search_results_size_prefix_sum_host[i] = last_sum + count;
+    // range for result_i: [sum_{i-1}, sum_{i})
+  }
+
+  // ensure capacity
+  const auto minCapacity = neighbor_search_results_size_prefix_sum_host.back();
+  if (minCapacity > neighbor_search_results_dev_capacity) {
+    neighbor_search_results_dev_capacity = minCapacity * 1.2;
+    neighbor_search_results_host.resize(neighbor_search_results_dev_capacity);
+    cudaFree(neighbor_search_results_dev);
+    cudaMalloc(&neighbor_search_results_dev, sizeof(int) * neighbor_search_results_dev_capacity);
+  }
+
   for (int i = 0; i < num_particles; i++) {
     // line 6: find neighboring particles
     auto &pointSet = nsearch.point_set(0);
     auto count = pointSet.n_neighbors(0, i);
-    int currentCap = neighbor_search_results_capacity_host[i];
-    // if it exceeds current device array capacity
-    if (count > currentCap) {
-      cudaFree(neighbor_search_results_host[i]);
-      int newCap = static_cast<int>(count * 1.5);
-      cudaMalloc(&neighbor_search_results_host[i], sizeof(int)*newCap);
-    }
-    // update size in host
-    neighbor_search_results_size_host[i] = count;
-    // copy into device
-    // TODO: make it multi-stream async / batch update
-    cudaMemcpy(neighbor_search_results_host[i], pointSet.neighbor_list(0, i), sizeof(int)*count, cudaMemcpyHostToDevice);
+    const int start = i == 0 ? 0 :  neighbor_search_results_size_prefix_sum_host[i-1];
+
+    memcpy(&neighbor_search_results_host[start], pointSet.neighbor_list(0, i), sizeof(int)*count);
   }
-  // update size to device
-  cudaMemcpy(neighbor_search_results_size_dev, neighbor_search_results_size_host.data(), sizeof(int) * num_particles, cudaMemcpyHostToDevice);
+
+  // copy neighbor results to device
+  cudaMemcpy(
+    neighbor_search_results_dev, 
+    neighbor_search_results_host.data(), 
+    sizeof(int) * neighbor_search_results_dev_capacity, 
+    cudaMemcpyHostToDevice
+  );
+  // update size prefix sum to device
+  cudaMemcpy(
+    neighbor_search_results_size_prefix_sum_dev, 
+    neighbor_search_results_size_prefix_sum_host.data(), 
+    sizeof(int) * num_particles, 
+    cudaMemcpyHostToDevice
+  );
+
   cudaDeviceSynchronize();
 }
 
@@ -308,7 +316,7 @@ void Fluid_cuda::simulate(REAL delta_t,
       num_particles, 
       particle_positions_dev,
       neighbor_search_results_dev,
-      neighbor_search_results_size_dev,
+      neighbor_search_results_size_prefix_sum_dev,
       particle_mass, density, epsilon, h,
       lambda_device
     );
@@ -317,7 +325,7 @@ void Fluid_cuda::simulate(REAL delta_t,
       num_particles,
       particle_positions_dev,
       neighbor_search_results_dev,
-      neighbor_search_results_size_dev,
+      neighbor_search_results_size_prefix_sum_dev,
       delta_p,
       n, k, h, density,
       lambda_device,
@@ -345,7 +353,7 @@ void Fluid_cuda::simulate(REAL delta_t,
     particle_positions_dev,
     particle_velocities,
     neighbor_search_results_dev,
-    neighbor_search_results_size_dev,
+    neighbor_search_results_size_prefix_sum_dev,
     particle_mass, h, c, delta_t
   );
 

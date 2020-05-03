@@ -49,11 +49,11 @@ private:
   // internal data
   static constexpr int default_capacity{50};
   cuNSearch::NeighborhoodSearch nsearch;
-  vector<int *> neighbor_search_results_host;
-  vector<int> neighbor_search_results_size_host;
-  vector<int> neighbor_search_results_capacity_host;
-  int **neighbor_search_results_dev;
-  int *neighbor_search_results_size_dev;
+  vector<int> neighbor_search_results_host;
+  vector<int> neighbor_search_results_size_prefix_sum_host;
+  int neighbor_search_results_dev_capacity;
+  int *neighbor_search_results_dev;
+  int *neighbor_search_results_size_prefix_sum_dev;
 
   REAL3 *particle_positions_device;
   REAL3 *particle_velocities_device;
