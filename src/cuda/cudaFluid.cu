@@ -88,7 +88,8 @@ __global__ void calculate_delta_pi_and_collision_response(
   REAL h,
   REAL density,
   REAL *lambda,
-  CollisionObject **collision_objects
+  int nObjs,
+  Plane_cuda *collision_objects
 ) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num_particles; i += blockDim.x * gridDim.x) {
     const auto &p_i = particle_positions[i];
@@ -109,9 +110,9 @@ __global__ void calculate_delta_pi_and_collision_response(
     delta_p[i] /= density;
     // line 14: collision detection and response
     // TODO: apply them
-    // for (const auto co: *collision_objects) {
-    //   co->collide(particle_positions[i],delta_p[i]);
-    // }
+    for (int j = 0; j < nObjs; j++) {
+      collision_objects[j].collide(particle_positions[i],delta_p[i]);
+    }
   }
 }
 
@@ -275,7 +276,7 @@ void Fluid_cuda::find_neighbors(){
 
 void Fluid_cuda::simulate(REAL delta_t,
   const FluidParameters *fp,
-  vector<CollisionObject *> *collision_objects) {
+  thrust::device_vector<Plane_cuda> &collision_objects) {
   int num_particles = particle_positions->size();
   const auto particle_positions_dev = REAL3AsVector3R(particle_positions_device);
   const auto particle_predicted_positions = REAL3AsVector3R(particle_predicted_positions_device);
@@ -320,7 +321,8 @@ void Fluid_cuda::simulate(REAL delta_t,
       delta_p,
       n, k, h, density,
       lambda_device,
-      nullptr
+      collision_objects.size(),
+      thrust::raw_pointer_cast(collision_objects.data())
     );
 
     update_predicted_positions<<<num_particles,1>>>(

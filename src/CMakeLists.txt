@@ -35,7 +35,7 @@ set(FLUIDSIM_CUDA_SOURCE
     collision/plane.cpp
 
     # Application
-    cuda/cudaMain.cpp
+    cuda/cudaMain.cu
 
     misc/sphere_drawing.cpp
     misc/file_utils.cpp

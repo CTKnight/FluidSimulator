@@ -1,11 +1,9 @@
-#include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <memory>
 
 #include "../main.h"
 #include "cudaFluid.cuh"
-#include "../collision/plane.h"
-#include "../collision/sphere.h"
+#include "cudaPlane.cuh"
 
 using namespace std;
 
@@ -88,9 +86,16 @@ int main(int argc, char **argv) {
   unique_ptr<vector<REAL3>> position_fluid_cuda = make_unique<vector<REAL3>>(fluid->getParticlePositions());
   shared_ptr<Fluid_cuda> fluid_cuda = make_shared<Fluid_cuda>(std::move(position_fluid_cuda), fp->h);
   fluid_cuda->init();
-  FluidParameters *fp_dev;
-  cudaMalloc(((void**)&fp_dev), sizeof(FluidParameters));
-  cudaMemcpy(fp_dev, fp.get(), sizeof(FluidParameters), cudaMemcpyHostToDevice);
+  thrust::device_vector<Plane_cuda> collision_planes;
+  collision_planes.resize(objects_std.size());
+  for (int i = 0; i < objects_std.size(); i++) {
+    const auto co = objects_std[i];
+    if (Plane *p = dynamic_cast<Plane *>(co)) {
+      collision_planes[i] = Plane_cuda(*p);
+    } else {
+      std::cout << "CUDA version only support plane collision, omitting this collision object.\n";
+    }
+  }
 
   REAL delta_t = 1. / frames_per_sec / simulation_steps;
 
@@ -103,7 +108,7 @@ int main(int argc, char **argv) {
     for (int frame = 0; frame < frames_per_sec; frame++) {
       const auto start = chrono::high_resolution_clock::now(); 
       for (int i = 0; i < simulation_steps; i++) {
-        fluid_cuda->simulate(delta_t, fp.get(), nullptr);
+        fluid_cuda->simulate(delta_t, fp.get(), collision_planes);
       }
       const auto end = chrono::high_resolution_clock::now();
       const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);

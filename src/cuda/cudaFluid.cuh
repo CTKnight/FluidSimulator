@@ -7,12 +7,13 @@
 #include <memory>
 #include <iomanip>
 #include <iostream>
+#include <thrust/device_vector.h>
 
 #include "cuNSearch.h"
 #include "cudaUtils.h"
 #include "../real.h"
 #include "../fluidParameters.h"
-#include "../collision/collisionObject.h"
+#include "cudaPlane.cuh"
 
 using namespace std;
 
@@ -26,7 +27,7 @@ class Fluid_cuda {
   void init();
   void simulate(REAL delta_t,
                 const FluidParameters *cp,
-                vector<CollisionObject *> *collision_objects);
+                thrust::device_vector<Plane_cuda> &collision_objects);
 
   vector<REAL3> &getParticlePositions() {
     return *particle_positions;
