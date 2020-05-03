@@ -11,7 +11,7 @@ public:
       : origin(origin), radius(radius), radius2(radius * radius),
         friction(friction) {}
 
-  void collide(Vector3R &position, Vector3R &delta_p);
+  CUDA_CALLABLE void collide(Vector3R &position, Vector3R &delta_p);
 
   Vector3R origin;
   REAL radius;

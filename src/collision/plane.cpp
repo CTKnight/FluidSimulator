@@ -10,7 +10,7 @@ using namespace CGL;
 
 #define SURFACE_OFFSET 0.0001
 
-void Plane::collide(Vector3R &position, Vector3R &delta_p) {
+CUDA_CALLABLE void Plane::collide(Vector3R &position, Vector3R &delta_p) {
   const auto &predicted_position = position + delta_p;
   // TODO: assumption: axis aligned
   for (int i = 0; i < 3; i++) {
