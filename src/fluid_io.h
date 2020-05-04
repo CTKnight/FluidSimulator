@@ -43,7 +43,7 @@ std::ostream& operator<<(std::ostream& os, const Fluid& fluid) {
   os << "# vtk DataFile Version 3.0\n";
   os << "vtk output\n";
   os << "ASCII\n";
-  os << "DATASET UNSTRUCTURED_GRID\n";
+  os << "DATASET POLYDATA\n";
   os << "POINTS " << particles.size() << " float\n";
   os << std::setprecision(5) << std::fixed;
   for (const auto &p: particles) {
@@ -59,7 +59,7 @@ std::ostream& operator<<(std::ostream& os, const Fluid_cuda& fluid) {
   os << "# vtk DataFile Version 3.0\n";
   os << "vtk output\n";
   os << "ASCII\n";
-  os << "DATASET UNSTRUCTURED_GRID\n";
+  os << "DATASET POLYDATA\n";
   os << "POINTS " << particles.size() << " float\n";
   os << std::setprecision(5) << std::fixed;
   for (const auto &p: particles) {

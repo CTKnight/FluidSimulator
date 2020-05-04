@@ -57,7 +57,7 @@ bool directory_exists(const std::string& dir_path) {
 
 std::string fluid_filename(const std::string& dir_path, int n) {
   std::stringstream ss;
-  ss << dir_path << "/" << "fluid" << std::setfill('0') << std::setw(5) << n << ".vtk";
+  ss << dir_path << "/" << "fluid" << std::setfill('0') << std::setw(5) << n << ".vtp";
   return ss.str();
 }
 
