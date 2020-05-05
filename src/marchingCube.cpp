@@ -2,8 +2,8 @@
 
 // constructor
 MarchingCube::MarchingCube(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-                           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
-    init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox);
+                           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox, NeighborhoodSearch *neighbors) {
+    init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox, neighbors);
 }
 
 // destructor
@@ -13,7 +13,7 @@ MarchingCube::~MarchingCube() {
 
 // initialize private members
 void MarchingCube::init(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-                   const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
+                   const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox, NeighborhoodSearch *neighbors) {
     // init variables
     _density = density;
     _pmass = pmass;
@@ -29,23 +29,34 @@ void MarchingCube::init(double density, double pmass, Real nserach_radius, const
 
     // build arrays for nsearch and triangles
     _particles = particles;
-    _neighbors = new NeighborhoodSearch(nserach_radius, true);
-    _neighbors->add_point_set(particles.front().data(), particles.size(), true, true);
-    _neighbors->find_neighbors();
+    if (!neighbors) {
+        // no external neighbor pointer, build one
+        _neighbors = new NeighborhoodSearch(nserach_radius, true);
+        _neighbors->add_point_set(particles.front().data(), particles.size(), true, true);
+        _neighbors->find_neighbors();
+        _useExternalNeighbors = false;
+    } else {
+        // else, use provided neighbor pointer
+        _neighbors = neighbors;
+        _useExternalNeighbors = true;
+    }
+
     _triangles = new vector<MarchingTriangle>();
 }
 
 // delete allocated memories
 void MarchingCube::destroy() {
-    delete _neighbors;
+    if (!_useExternalNeighbors) {
+        delete _neighbors;
+    }
     delete _triangles;
 }
 
 // reset private members
 void MarchingCube::reset(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
+           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox, NeighborhoodSearch *neighbors) {
     destroy();
-    init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox);
+    init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox, neighbors);
 }
 
 // get triangles using marching cube algorithm

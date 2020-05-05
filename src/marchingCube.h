@@ -30,10 +30,10 @@ struct MarchingGrid {
 class MarchingCube {
 public:
     MarchingCube(double density, double pmass, REAL nserach_radius, const vector<array<REAL, 3>> &particles,
-            const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox); // constructor
+            const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox, NeighborhoodSearch *neighbors=NULL); // constructor
     ~MarchingCube(); // destructor
     void reset(double density, double pmass, REAL nserach_radius, const vector<array<REAL, 3>> &particles,
-            const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox); // reset variables
+            const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox, NeighborhoodSearch *neighbors=NULL); // reset variables
     inline const vector<MarchingTriangle> *getTriangles() { return _triangles; } // return triangle vector
     inline int getNumTriangles() { return _totTriangles; } // return total number of triangles
     void calculateTriangles(double coefficient=0.1, double isolevel=1000); // get all triangles via marchingCube algorithm
@@ -41,7 +41,7 @@ public:
 
 protected:
     void init(double density, double pmass, REAL nserach_radius, const vector<array<REAL, 3>> &particles,
-              const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox); // init members
+              const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox, NeighborhoodSearch *neighbors); // init members
     void destroy(); // destroy new arrays
     void getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3R &index); // get marchingGrid for each unit cube, with iso values calculated
     Vector3R getNormal(Vector3R &pos, double coefficient);
@@ -60,6 +60,7 @@ protected:
     Vector3R _maxBox; // maximum bounding box value for the image
     NeighborhoodSearch *_neighbors;
     vector<MarchingTriangle> *_triangles;
+    bool _useExternalNeighbors;
 
     int _edgeTable[256]={
             0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
