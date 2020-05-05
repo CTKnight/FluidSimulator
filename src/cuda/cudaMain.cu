@@ -1,3 +1,5 @@
+#ifdef BUILD_CUDA
+
 #include <thrust/device_vector.h>
 #include <memory>
 
@@ -7,7 +9,6 @@
 
 using namespace std;
 
-#ifdef BUILD_CUDA
 
 int main(int argc, char **argv) {
   // Attempt to find project root

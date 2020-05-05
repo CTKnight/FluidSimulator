@@ -1,10 +1,10 @@
+#ifdef BUILD_CUDA
+
 #include <cmath>
 #include <cstdio>
 
 #include "cudaFluid.cuh"
 #include "../kernel.h"
-
-#ifdef BUILD_CUDA
 
 __global__ void simulate_update_position_predict_position(
   int n,
