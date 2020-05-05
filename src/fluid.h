@@ -6,59 +6,48 @@
 #include <vector>
 #include <memory>
 
-#include "CGL/CGL.h"
-#include "CGL/misc.h"
+#ifdef BUILD_CUDA
+#include "cuNSearch.h"
+#else
 #include <CompactNSearch>
+#endif
+
 #include "collision/collisionObject.h"
 #include "marchingCube.h"
+#include "real.h"
+#include "vector3R.h"
+#include "fluidParameters.h"
 
 using namespace CGL;
 using namespace std;
 
-struct FluidParameters {
-  FluidParameters(): FluidParameters(1000, 0.001, 0.1) {}
-  FluidParameters(
-    double density,
-    double particle_mass,
-    double damping,
-    int solverIterations = 5,
-    double particleRadius = 0.05)
-      : density(density), particle_mass(particle_mass), damping(damping), solverIterations(solverIterations), particleRadius(particleRadius) {}
-  ~FluidParameters() {}
-
-  // Global simulation parameters
-
-  double damping;
-  double particle_mass;
-  // unit: kg/m^3
-  double density;
-  int solverIterations;
-
-  // render parameters
-
-  // unit: m
-  double particleRadius;
-};
-
+// default parameter: http://graphics.stanford.edu/courses/cs348c/PA1_PBF2016/index.html
 struct Fluid {
-  using Triad = array<CompactNSearch::Real, 3>;
-  Fluid(unique_ptr<vector<Triad>> &&particle_positions);
   Fluid(
-    unique_ptr<vector<Triad>> &&particle_positions, 
-    unique_ptr<vector<Triad>> &&particle_velocities,
-    double h = 0.01
+    unique_ptr<vector<REAL3>> &&particle_positions, 
+    unique_ptr<vector<REAL3>> &&particle_velocities,
+    REAL h
   );
   ~Fluid() = default;
-  void simulate(double frames_per_sec, double simulation_steps, const std::shared_ptr<FluidParameters> &cp,
-                vector<Vector3D> external_accelerations,
+  void init();
+  void simulate(REAL frames_per_sec, REAL simulation_steps,
+                const std::shared_ptr<FluidParameters> &cp, 
                 vector<CollisionObject *> *collision_objects);
 
-  vector<Triad> &getParticlePositions() {
+  vector<REAL3> &getParticlePositions() {
     return *particle_positions;
   }
 
-  const vector<Triad> &getParticlePositions() const {
+  const vector<REAL3> &getParticlePositions() const {
     return *particle_positions;
+  }
+
+  vector<REAL3> &getParticleVelocities() {
+    return *particle_velocities;
+  }
+
+  const vector<REAL3> &getParticleVelocities() const {
+    return *particle_velocities;
   }
 
   void reset();
@@ -67,26 +56,19 @@ struct Fluid {
 private:
   // Fluid components
   // input
-  unique_ptr<vector<Triad>> particle_positions;
-  unique_ptr<vector<Triad>> particle_velocities;
+  unique_ptr<vector<REAL3>> particle_positions;
+  unique_ptr<vector<REAL3>> particle_velocities;
   // internal data
-  vector<Triad> particle_preditced_positions;
-  vector<Triad> delta_p;
-  vector<Triad> lambda;
+  vector<REAL3> particle_predicted_positions;
+  vector<REAL3> delta_p;
+  vector<REAL> lambda;
 
+  // #ifdef BUILD_CUDA
+  // cuNSearch::NeighborhoodSearch nsearch;
+  // #else
   CompactNSearch::NeighborhoodSearch nsearch;
+  // #endif
   vector<vector<vector<unsigned int>>> neighbor_search_results;
 };
-
-inline Vector3D &triadAsVector3D(Fluid::Triad &triad);
-inline const Vector3D &triadAsVector3D(const Fluid::Triad &triad);
-inline vector<Vector3D> &triadAsVector3D(vector<Fluid::Triad> &triads);
-inline const vector<Vector3D> &triadAsVector3D(const vector<Fluid::Triad> &triads);
-
-std::istream& operator>>(std::istream& os, Vector3D& v);
-std::istream& operator>>(std::istream& is, Fluid::Triad& v);
-std::ostream& operator<<(std::ostream& os, const Fluid::Triad& v);
-std::istream& operator>>(std::istream& is, Fluid& fluid);
-std::ostream& operator<<(std::ostream& os, const Fluid& fluid);
 
 #endif /* FLUID_H */

@@ -246,15 +246,9 @@ void ClothSimulator::initWindow(std::string project_root, Screen *screen, const 
 bool ClothSimulator::isAlive() { return is_alive; }
 
 void ClothSimulator::simulate() {
-    vector<Vector3D> external_accelerations = {gravity};
-
-    const auto start = chrono::high_resolution_clock::now(); 
     for (int i = 0; i < simulation_steps; i++) {
-      fluid->simulate(frames_per_sec, simulation_steps, fp, external_accelerations, collision_objects);
+      fluid->simulate(frames_per_sec, simulation_steps, fp, collision_objects);
     }
-    const auto end = chrono::high_resolution_clock::now();
-    const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
-    cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " micro sec." << endl; 
 }
 
 void ClothSimulator::drawContents(bool shouldSimulate) {

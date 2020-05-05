@@ -25,6 +25,7 @@
 #include "misc/file_utils.h"
 #include "marchingCube.h"
 #include "marchingCube.cpp"
+#include "main.h"
 
 typedef uint32_t gid_t;
 
@@ -34,12 +35,6 @@ using namespace nanogui;
 using json = nlohmann::json;
 
 #define msg(s) cerr << "[ClothSim] " << s << endl;
-
-const string PLANE = "plane";
-const string FLUID = "fluid";
-const string COLLISIONS = "collisions";
-
-const unordered_set<string> VALID_KEYS = {FLUID, COLLISIONS};
 
 ClothSimulator *app = nullptr;
 GLFWwindow *window = nullptr;
@@ -144,171 +139,35 @@ void setGLFWCallbacks() {
                                  });
 }
 
-void usageError(const char *binaryName) {
-  printf("Usage: %s [options]\n", binaryName);
-  printf("Required program options:\n");
-  printf("  -f     <STRING>    Filename of scene\n");
-  printf("  -r     <STRING>    Project root.\n");
-  printf("                     Should contain \"shaders/Default.vert\".\n");
-  printf("                     Automatically searched for by default.\n");
-  printf("  -a     <INT>       Sphere vertices latitude direction.\n");
-  printf("  -o     <INT>       Sphere vertices longitude direction.\n");
-  printf("  -p     <INT>       Output particle data folder.\n");
-  printf("  -i     <INT>       Input particle data folder.\n");
-  printf("  -n     <INT>       off for no window.\n");
-  printf("\n");
-  exit(-1);
-}
-
-void incompleteObjectError(const char *object, const char *attribute) {
-  cout << "Incomplete " << object << " definition, missing " << attribute << endl;
-  exit(-1);
-}
-
-bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<FluidParameters> &fp, vector<CollisionObject *>* objects, int sphere_num_lat, int sphere_num_lon) {
-  std::cout << "loadObjectsFromFile: " << filename << "\n";
-
-  // Read JSON from file
-  ifstream i(filename);
-  if (!i.good()) {
-    return false;
-  }
-  json j;
-  i >> j;
-
-  // Loop over objects in scene
-  for (json::iterator it = j.begin(); it != j.end(); ++it) {
-    string key = it.key();
-
-    // Check that object is valid
-    unordered_set<string>::const_iterator query = VALID_KEYS.find(key);
-    if (query == VALID_KEYS.end()) {
-      cout << "Invalid scene object found: " << key << endl;
-      exit(-1);
-    }
-
-    // Retrieve object
-    json object = it.value();
-
-    // Parse object depending on type (cloth, sphere, or plane)
-    if (key == FLUID) {
-      double particle_mass = object["particle_mass"];
-      double density = object["density"];
-      double cube_size_per_particle = 1. / pow(density/particle_mass, 1./3.);
-      auto shape = object["shape"];
-      if (!shape.is_array()) {
-        throw std::runtime_error("Fluid shape should be an array");
-      }
-
-      unique_ptr<vector<Fluid::Triad>> particles = make_unique<vector<Fluid::Triad>>();
-      for (const auto &el: shape) {
-        string type = el["type"];
-        if (type == "cube") {
-          vector<double> origin = el["origin"];
-          vector<double> size = el["size"];
-          for (double i = origin[0]; i < origin[0] + size[0]; i += cube_size_per_particle) {
-            for (double j = origin[1]; j < origin[1] + size[1]; j += cube_size_per_particle) {
-              for (double k = origin[2]; k < origin[2] + size[2]; k += cube_size_per_particle) {
-                particles->emplace_back(Fluid::Triad{i, j, k});
-              }
-            }
-          }
-        } else if (type == "sphere") {
-          vector<double> origin = el["origin"];
-          double radius = el["radius"];
-          double r2 = pow(radius, 2);
-          for (double i = origin[0]-radius; i < origin[0]+radius; i += cube_size_per_particle) {
-            for (double j = origin[1]-radius; j < origin[1]+radius; j += cube_size_per_particle) {
-              for (double k = origin[2]-radius; k < origin[2]+radius; k += cube_size_per_particle) {
-                if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
-                  particles->emplace_back(Fluid::Triad{i, j, k});
-                }
-              }
-            }
-          }
-        } else if (type == "file") {
-          string path = el["path"];
-          // TODO
-        } else {
-          throw std::runtime_error(string("Invalid fluid.shape type: ") + type);
-        }
-      }
-      fluid = make_shared<Fluid>(std::move(particles), nullptr, 10 * cube_size_per_particle);
-      fp = make_shared<FluidParameters>(density, particle_mass, 0.1, 5, 0.005);
-      // Cloth parameters
-
-    } else if (key == COLLISIONS) { // PLANE
-      if (!object.is_array()) {
-        throw std::runtime_error(COLLISIONS + std::string(" should be an array"));
-      }
-      for (const auto &el: object) {
-        const string type = el["type"];
-        vector<double> vec_point = el["point"];
-        vector<double> vec_normal = el["normal"];
-        double friction = el["friction"];
-        Vector3D point{vec_point[0], vec_point[1], vec_point[2]};
-        Vector3D normal{vec_normal[0], vec_normal[1], vec_normal[2]};
-        Plane *p = new Plane(point, normal, friction);
-        objects->push_back(p);
-      }
-    }
-  }
-
-  i.close();
-  
-  return true;
-}
-
-bool is_valid_project_root(const std::string& search_path) {
-    std::stringstream ss;
-    ss << search_path;
-    ss << "/";
-    ss << "shaders/Default.vert";
-    
-    return FileUtils::file_exists(ss.str());
-}
-
-// Attempt to locate the project root automatically
-bool find_project_root(const std::vector<std::string>& search_paths, std::string& retval) {
-  
-  for (std::string search_path : search_paths) {
-    if (is_valid_project_root(search_path)) {
-      retval = search_path;
-      return true;
-    }
-  }
-  return false;
-}
-
 void testingMarchingCube() {
     // testing marching cube
     cout << "BEGIN TESTING \n";
 
-    Vector3D minbox, maxbox;
+    Vector3R minbox, maxbox;
     int range = 0;
     // testing box for cube
-//    minbox = Vector3D(1.0, 1.0, 0.0);
-//    maxbox = Vector3D(1.5, 1.5, 0.5);
+//    minbox = Vector3R(1.0, 1.0, 0.0);
+//    maxbox = Vector3R(1.5, 1.5, 0.5);
 //    range = 0;
     // testing box for splat
-//    minbox = Vector3D(0.0, 0.0, 0.0);
-//    maxbox = Vector3D(2.0, 3.0, 2.0);
+//    minbox = Vector3R(0.0, 0.0, 0.0);
+//    maxbox = Vector3R(2.0, 3.0, 2.0);
 //    range = 0;
     // testing box for cuda_test4
-//    minbox = Vector3D(0.0, 0.0, 0.0);
-//    maxbox = Vector3D(2.0, 2.0, 2.0);
+//    minbox = Vector3R(0.0, 0.0, 0.0);
+//    maxbox = Vector3R(2.0, 2.0, 2.0);
 //    range = 120;
     // testing box for large30
-    minbox = Vector3D(0.0, 0.0, 0.0);
-    maxbox = Vector3D(2.0, 3.0, 2.0);
+    minbox = Vector3R(0.0, 0.0, 0.0);
+    maxbox = Vector3R(2.0, 3.0, 2.0);
     range = 210;
     // testing box for one30
-//    minbox = Vector3D(0.0, 0.0, 0.0);
-//    maxbox = Vector3D(2.0, 2.0, 4.0);
+//    minbox = Vector3R(0.0, 0.0, 0.0);
+//    maxbox = Vector3R(2.0, 2.0, 4.0);
 //    range = 210;
     // testing box for double30
-//    minbox = Vector3D(0.0, 0.0, 0.0);
-//    maxbox = Vector3D(2.0, 2.0, 5.0);
+//    minbox = Vector3R(0.0, 0.0, 0.0);
+//    maxbox = Vector3R(2.0, 2.0, 5.0);
 //    range = 210;
 
     int num_cubes_per_side = 50;
@@ -317,7 +176,7 @@ void testingMarchingCube() {
     double pmass = 1;
     double h = 0.1;
     double isolevel = h * density;
-    Vector3D ugrid = Vector3D((maxbox.x-minbox.x)/num_cubes_per_side, (maxbox.y-minbox.y)/num_cubes_per_side, (maxbox.z-minbox.z)/num_cubes_per_side);
+    Vector3R ugrid = Vector3R((maxbox.x-minbox.x)/num_cubes_per_side, (maxbox.y-minbox.y)/num_cubes_per_side, (maxbox.z-minbox.z)/num_cubes_per_side);
 
     for (int i = 0; i <= range; ++i) {
         char buffer[50], buffer2[50];
@@ -382,8 +241,9 @@ int main(int argc, char **argv) {
   std::string particle_foldername_to_input;
   std::string particle_foldername_to_output;
   bool withoutWindow = false;
+  int sec = 1;
   
-  while ((c = getopt (argc, argv, "f:r:a:o:p:i:n")) != -1) {
+  while ((c = getopt (argc, argv, "f:r:a:o:p:i:ns:")) != -1) {
     switch (c) {
       case 'f': {
         file_to_load_from = optarg;
@@ -426,6 +286,13 @@ int main(int argc, char **argv) {
         withoutWindow = true;
         break;
       }
+      case 's': {
+        sec = atoi(optarg);
+        if (sec < 1) {
+          sec = 1;
+        }
+        break;
+      }
       default: {
         usageError(argv[0]);
         break;
@@ -451,21 +318,16 @@ int main(int argc, char **argv) {
     file_to_load_from = def_fname.str();
   }
   
-  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects, sphere_num_lat, sphere_num_lon);
+  bool success = loadObjectsFromFile(file_to_load_from, fluid, fp, &objects);
   
   if (!success) {
     std::cout << "Warn: Unable to load from file: " << file_to_load_from << std::endl;
+    exit(-1);
   }
 
   bool particle_folder_to_output_good = false;
   if (particle_foldername_to_output.length() != 0) {
-      int err;
-      // from https://stackoverflow.com/questions/23427804/cant-find-mkdir-function-in-dirent-h-for-windows
-      #ifdef _WIN32
-        err = _mkdir(particle_foldername_to_output.c_str());
-      #else 
-        err = mkdir(particle_foldername_to_output.c_str(),0755);
-      #endif
+    int err = mkdir_main(particle_foldername_to_output.c_str());
     particle_folder_to_output_good = err == 0;
     if (!particle_folder_to_output_good) {
       std::cout << "Warn: can't mkdir at " << particle_foldername_to_output << ", will not write to it\n";
@@ -480,6 +342,8 @@ int main(int argc, char **argv) {
 
   // Initialize the ClothSimulator object
 
+  fluid->init();
+
   app = new ClothSimulator(withoutWindow);
   app->loadFluid(fluid);
   app->loadFluidParameters(fp);
@@ -487,21 +351,22 @@ int main(int argc, char **argv) {
 
   if (withoutWindow) {
     const auto fps = app->getFps();
-    constexpr double duration = 1;
+    double duration = sec;
     int n = 0;
+    if (particle_folder_to_output_good) {
+      writeFluidToFileN(particle_foldername_to_output, n, *fluid);
+    }
+    n++;
     for (int t = 0; t < duration; t++) {
       for (int f = 0; f < fps; f++) {
+        const auto start = chrono::high_resolution_clock::now(); 
         app->simulate();
+        const auto end = chrono::high_resolution_clock::now();
+        const auto duration = chrono::duration_cast<chrono::milliseconds>(end-start);
+        cout << n << " frame" << ", simulated for " << app->getSimulationSteps() << " steps in " << duration.count() << " microsec." << endl; 
         // output per frame
         if (particle_folder_to_output_good) {
-          const auto output_filename = FileUtils::fluid_filename(particle_foldername_to_output, n);
-          ofstream particle_file_to_output(output_filename);
-          if (particle_file_to_output) {
-            particle_file_to_output << *fluid;
-          } else {
-            throw std::runtime_error(output_filename + string(" is not good to write!"));
-          }
-          particle_file_to_output.close();
+          writeFluidToFileN(particle_foldername_to_output, n, *fluid);
         }
         n++;
       }

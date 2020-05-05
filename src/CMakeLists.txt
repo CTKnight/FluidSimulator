@@ -26,9 +26,32 @@ set(FLUIDSIM_VIEWER_SOURCE
     renderer.cpp
 )
 
+set(FLUIDSIM_CUDA_SOURCE
+    # Cloth simulation objects
+    fluid.cpp
+
+    # Collision objects
+    collision/sphere.cpp
+    collision/plane.cpp
+
+    # Application
+    cuda/cudaMain.cu
+
+    misc/sphere_drawing.cpp
+    misc/file_utils.cpp
+
+    cuda/cudaFluid.cu
+    cuda/cudaFluid.cuh
+)
+
 # Windows-only sources
 if(WIN32)
 list(APPEND FLUIDSIM_VIEWER_SOURCE
+    # For get-opt
+    misc/getopt.c
+)
+
+list(APPEND FLUIDSIM_CUDA_SOURCE
     # For get-opt
     misc/getopt.c
 )
@@ -81,26 +104,33 @@ target_link_libraries(fluidsim
     CompactNSearch
 )
 
-add_executable(nsearchDemo nsearchMain.cpp)
-target_link_libraries(nsearchDemo
-    CompactNSearch
-)
-
 if(OpenMP_CXX_FOUND)
     target_link_libraries(fluidsim
-        OpenMP::OpenMP_CXX
-    )
-
-    target_link_libraries(nsearchDemo
         OpenMP::OpenMP_CXX
     )
 endif(OpenMP_CXX_FOUND)
 
 if (BUILD_CUDA)
-  add_executable(cuNSearchDemo cuNSearchMain.cu)
-  target_link_libraries(cuNSearchDemo
-      cuNSearch
-  )
+    enable_language(CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+    include_directories(
+        ${CUDA_INCLUDE_DIRS}
+    )
+    target_link_libraries(fluidsim
+        cuNSearch
+    )
+    # Cloth simulation source
+    add_executable(fluidsimCuda ${FLUIDSIM_CUDA_SOURCE})
+    set_target_properties(fluidsimCuda PROPERTIES
+                            CUDA_SEPERABLE_COMPILATION ON)
+    target_link_libraries(fluidsimCuda
+        CGL ${CGL_LIBRARIES}
+        ${CMAKE_THREADS_INIT}
+        CompactNSearch
+        cuNSearch
+        ${CUDA_LIBRARIES}
+    )
 endif (BUILD_CUDA)
 
 #-------------------------------------------------------------------------------

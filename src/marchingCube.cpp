@@ -2,7 +2,7 @@
 
 // constructor
 MarchingCube::MarchingCube(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-                           const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox) {
+                           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
     init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox);
 }
 
@@ -13,7 +13,7 @@ MarchingCube::~MarchingCube() {
 
 // initialize private members
 void MarchingCube::init(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-                   const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox) {
+                   const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
     // init variables
     _density = density;
     _pmass = pmass;
@@ -43,7 +43,7 @@ void MarchingCube::destroy() {
 
 // reset private members
 void MarchingCube::reset(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
-           const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox) {
+           const Vector3R &unitGrid, const Vector3R &minBox, const Vector3R &maxBox) {
     destroy();
     init(density, pmass, nserach_radius, particles, unitGrid, minBox, maxBox);
 }
@@ -53,7 +53,7 @@ void MarchingCube::calculateTriangles(double coefficient, double isolevel) {
     for (int i = 0; i < _numGrids[0] - 1; ++i) {
         for (int j = 0; j < _numGrids[1] - 1; ++j) {
             for (int k = 0; k < _numGrids[2] - 1; ++k) {
-                Vector3D index(i, j, k);
+                Vector3R index(i, j, k);
                 MarchingGrid grid;
                 getMarchingGrid(grid, coefficient, index);
                 _totTriangles += Polygonise(grid, isolevel);
@@ -64,7 +64,7 @@ void MarchingCube::calculateTriangles(double coefficient, double isolevel) {
 }
 
 // set actual positions and corresponding isovalues for each vertex of the unit cube
-void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3D &index) {
+void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3R &index) {
     // 000, 100, 101, 001, 010, 110, 111, 011
     int order[8][3];
     order[0][0] = 0; order[0][1] = 0; order[0][2] = 0;
@@ -77,8 +77,8 @@ void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vecto
     order[7][0] = 0; order[7][1] = 1; order[7][2] = 1;
 
     for (int i = 0; i < 8; ++i) {
-        Vector3D pos = Vector3D((index.x + order[i][0]) * _unitGrid.x + _minBox.x, (index.y + + order[i][1]) * _unitGrid.y + _minBox.y, (index.z + + order[i][2]) * _unitGrid.z + _minBox.z);
-        Vector3D norm = getNormal(pos, coefficient);
+        Vector3R pos = Vector3R((index.x + order[i][0]) * _unitGrid.x + _minBox.x, (index.y + + order[i][1]) * _unitGrid.y + _minBox.y, (index.z + + order[i][2]) * _unitGrid.z + _minBox.z);
+        Vector3R norm = getNormal(pos, coefficient);
         grid.v[i].p = pos;
         grid.v[i].n = norm;
         grid.val[i] = getIsoValue(pos, coefficient);
@@ -86,7 +86,7 @@ void MarchingCube::getMarchingGrid(MarchingGrid &grid, double coefficient, Vecto
 }
 
 // get isovalue for each vertex
-double MarchingCube::getIsoValue(Vector3D &pos, double coefficient) {
+double MarchingCube::getIsoValue(Vector3R &pos, double coefficient) {
     Real rpos[3] = {pos.x, pos.y, pos.z};
     double isovalue = 0.0;
     double h = coefficient;
@@ -107,13 +107,13 @@ double MarchingCube::getIsoValue(Vector3D &pos, double coefficient) {
     return isovalue;
 }
 
-Vector3D MarchingCube::getNormal(Vector3D &pos, double coefficient) {
+Vector3R MarchingCube::getNormal(Vector3R &pos, double coefficient) {
     double step_x = 0.01 * _unitGrid.x, step_y = 0.01 * _unitGrid.y, step_z = 0.01 * _unitGrid.z;
     step_y = step_x; step_z = step_x;
-    Vector3D x_plus = Vector3D(pos.x + step_x, pos.y, pos.z), x_minus = Vector3D(pos.x - step_x, pos.y, pos.z);
-    Vector3D y_plus = Vector3D(pos.x, pos.y + step_y, pos.z), y_minus = Vector3D(pos.x, pos.y - step_y, pos.z);
-    Vector3D z_plus = Vector3D(pos.x, pos.y, pos.z + step_z), z_minus = Vector3D(pos.x, pos.y, pos.z - step_z);
-    Vector3D normal = Vector3D(getIsoValue(x_plus, coefficient) - getIsoValue(x_minus, coefficient),
+    Vector3R x_plus = Vector3R(pos.x + step_x, pos.y, pos.z), x_minus = Vector3R(pos.x - step_x, pos.y, pos.z);
+    Vector3R y_plus = Vector3R(pos.x, pos.y + step_y, pos.z), y_minus = Vector3R(pos.x, pos.y - step_y, pos.z);
+    Vector3R z_plus = Vector3R(pos.x, pos.y, pos.z + step_z), z_minus = Vector3R(pos.x, pos.y, pos.z - step_z);
+    Vector3R normal = Vector3R(getIsoValue(x_plus, coefficient) - getIsoValue(x_minus, coefficient),
             getIsoValue(y_plus, coefficient) - getIsoValue(y_minus, coefficient),
             getIsoValue(z_plus, coefficient) - getIsoValue(z_minus, coefficient));
     if (normal.norm() > 1e-9) normal.normalize();
@@ -232,26 +232,3 @@ void MarchingCube::writeTrianglesIntoObjs(string filepath) {
 
     file.close();
 }
-
-//void Fluid::writeTrianglesIntoObjs(string filepath, Vector3D min, Vector3D sizeCell) {
-//    ofstream file;
-//    file.open(filepath + ".csv", ios_base::app);
-//    for (int xpos = 0; xpos < _numGrids[0]; ++xpos) {
-//        for (int ypos = 0; ypos < _numGrids[0]; ++ypos) {
-//            for (int zpos = 0; zpos < _numGrids[0]; ++zpos) {
-//                // fs << xpos << " " << ypos <<" " << zpos/
-//                fs << isotropic_kernel(Vector3D(xpos, ypos, zpos)*sizeCell + min) << std::endl;
-//                // fs << gradientNormal(Vector3D(xpos, ypos, zpos)*sizeCell + min) << std::endl;
-//                // fs << isotropic_kernel(Vector3D(xpos+1, ypos, zpos)*sizeCell+ min);
-//                // fs << isotropic_kernel(Vector3D(xpos+1, ypos, zpos+1)*sizeCell+ min);
-//                // fs << isotropic_kernel(Vector3D(xpos, ypos, zpos+1)*sizeCell+ min);
-//                // fs << isotropic_kernel(Vector3D(xpos, ypos+1, zpos)*sizeCell+ min);
-//                // fs << isotropic_kernel(Vector3D(xpos+1, ypos+1, zpos)*sizeCell+ min);
-//                // fs << isotropic_kernel(Vector3D(xpos+1, ypos+1, zpos+1)*sizeCell+ min);
-//                // fs << isotropic_kernel(Vector3D(xpos, ypos+1, zpos+1)*sizeCell+ min);
-//                // fs << std::endl;
-//            }
-//        }
-//    }
-//    fs.close();
-//}
