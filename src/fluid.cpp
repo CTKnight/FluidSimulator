@@ -8,6 +8,8 @@
 #include "collision/plane.h"
 #include "collision/sphere.h"
 #include "kernel.h"
+#include "stdio.h"
+#include "string.h"
 
 using namespace std;
 

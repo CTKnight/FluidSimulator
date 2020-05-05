@@ -26,6 +26,7 @@
 #include "marchingCube.h"
 #include "marchingCube.cpp"
 #include "main.h"
+#include <chrono>
 
 typedef uint32_t gid_t;
 
@@ -359,7 +360,7 @@ int main(int argc, char **argv) {
     n++;
     for (int t = 0; t < duration; t++) {
       for (int f = 0; f < fps; f++) {
-        const auto start = chrono::high_resolution_clock::now(); 
+        const auto start = chrono::high_resolution_clock::now();
         app->simulate();
         const auto end = chrono::high_resolution_clock::now();
         const auto duration = chrono::duration_cast<chrono::milliseconds>(end-start);
