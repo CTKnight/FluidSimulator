@@ -13,12 +13,16 @@ using namespace std;
 using namespace CGL;
 using namespace CompactNSearch;
 
+struct Vertex {
+    Vector3D p, n;
+};
+
 struct MarchingTriangle {
-    Vector3D p[3];
+    Vertex v[3];
 };
 
 struct MarchingGrid {
-    Vector3D p[8];
+    Vertex v[8];
     double val[8];
 };
 
@@ -31,17 +35,18 @@ public:
             const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox); // reset variables
     inline const vector<MarchingTriangle> *getTriangles() { return _triangles; } // return triangle vector
     inline int getNumTriangles() { return _totTriangles; } // return total number of triangles
-    void calculateTriangles(double coefficient=2.5, double isolevel=800, bool force=false); // get all triangles via marchingCube algorithm
+    void calculateTriangles(double coefficient=0.1, double isolevel=1000); // get all triangles via marchingCube algorithm
     void writeTrianglesIntoObjs(string filepath); // write triangle locations into obj file
 
 protected:
     void init(double density, double pmass, Real nserach_radius, const vector<array<Real, 3>> &particles,
               const Vector3D &unitGrid, const Vector3D &minBox, const Vector3D &maxBox); // init members
     void destroy(); // destroy new arrays
-    void getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3D &index, bool force); // get marchingGrid for each unit cube, with iso values calculated
-    double getIsoValue(Vector3D &pos, double coefficient, bool force); // get iso value for each vertex (with its nearest neighbors)
+    void getMarchingGrid(MarchingGrid &grid, double coefficient, Vector3D &index); // get marchingGrid for each unit cube, with iso values calculated
+    Vector3D getNormal(Vector3D &pos, double coefficient);
+    double getIsoValue(Vector3D &pos, double coefficient); // get iso value for each vertex (with its nearest neighbors)
     int Polygonise(MarchingGrid &grid, double isolevel); // get triangles for each small unit cube
-    Vector3D VertexInterp(double isolevel, Vector3D a, Vector3D b, double val_a, double val_b); // vertex interpolation for edge intersection
+    Vertex VertexInterp(double isolevel, Vertex &a, Vertex &b, double val_a, double val_b); // vertex interpolation for edge intersection
 
     // private members
     double _density; // density

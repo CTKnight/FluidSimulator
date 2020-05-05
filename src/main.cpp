@@ -283,65 +283,77 @@ bool find_project_root(const std::vector<std::string>& search_paths, std::string
 void testingMarchingCube() {
     // testing marching cube
     cout << "BEGIN TESTING \n";
-    Vector3D ugrid = Vector3D(0.01, 0.01, 0.01);
-    Vector3D minbox = Vector3D(1.0, 1.0, 0.0);
-    Vector3D maxbox = Vector3D(1.5, 1.5, 0.5);
-    vector<array<Real, 3>> part;
 
-    string line;
-    ifstream myfile ("example.txt");
-    if (myfile.is_open())
-    {
-        while ( getline (myfile,line) )
+    Vector3D minbox, maxbox;
+    int range = 0;
+    // testing box for cube
+//    minbox = Vector3D(1.0, 1.0, 0.0);
+//    maxbox = Vector3D(1.5, 1.5, 0.5);
+//    range = 0;
+    // testing box for splat
+//    minbox = Vector3D(0.0, 0.0, 0.0);
+//    maxbox = Vector3D(2.0, 3.0, 2.0);
+//    range = 0;
+    // testing box for cuda_test4
+//    minbox = Vector3D(0.0, 0.0, 0.0);
+//    maxbox = Vector3D(2.0, 2.0, 2.0);
+//    range = 120;
+    // testing box for large30
+    minbox = Vector3D(0.0, 0.0, 0.0);
+    maxbox = Vector3D(2.0, 3.0, 2.0);
+    range = 210;
+    // testing box for one30
+//    minbox = Vector3D(0.0, 0.0, 0.0);
+//    maxbox = Vector3D(2.0, 2.0, 4.0);
+//    range = 210;
+    // testing box for double30
+//    minbox = Vector3D(0.0, 0.0, 0.0);
+//    maxbox = Vector3D(2.0, 2.0, 5.0);
+//    range = 210;
+
+    int num_cubes_per_side = 50;
+    Real radius = 0.1;
+    double density = 6000;
+    double pmass = 1;
+    double h = 0.1;
+    double isolevel = h * density;
+    Vector3D ugrid = Vector3D((maxbox.x-minbox.x)/num_cubes_per_side, (maxbox.y-minbox.y)/num_cubes_per_side, (maxbox.z-minbox.z)/num_cubes_per_side);
+
+    for (int i = 0; i <= range; ++i) {
+        char buffer[50], buffer2[50];
+        int count = 0;
+        sprintf(buffer, "input/large30/fluid%05d.vtp", i);
+        sprintf(buffer2, "output/large30/fluid%05d", i);
+        cout << buffer << endl;
+
+        vector<array<Real, 3>> part;
+        string line;
+        ifstream myfile (buffer);
+        if (myfile.is_open())
         {
-            vector <string> tokens;
-            stringstream check1(line);
-            string intermediate;
-            while(getline(check1, intermediate, ' '))  tokens.push_back(intermediate);
-            array<Real, 3> arr;
-            for(int i = 0; i < tokens.size(); i++) {
-                arr[i] = stod(tokens[i]);
+            while ( getline (myfile,line) ) {
+                ++count;
+                if (count > 5) {
+                    // actual data
+                    vector <string> tokens;
+                    stringstream check1(line);
+                    string intermediate;
+                    while(getline(check1, intermediate, ' '))  tokens.push_back(intermediate);
+                    array<Real, 3> arr;
+                    for(int i = 0; i < tokens.size(); i++) {
+                        arr[i] = stod(tokens[i]);
+                    }
+                    part.push_back(arr);
+                }
             }
-            part.push_back(arr);
+            myfile.close();
         }
-        myfile.close();
+
+        cout << "part size = " << part.size() << endl;
+        MarchingCube cube(density, pmass, radius, part, ugrid, minbox, maxbox);
+        cube.calculateTriangles(h, isolevel);
+        cube.writeTrianglesIntoObjs(buffer2);
     }
-    cout << "part size =" << part.size() << endl;
-    MarchingCube cube(6000, 1, 0.1, part, ugrid, minbox, maxbox);
-    cube.calculateTriangles(0.1, 0, true);
-    cube.calculateTriangles(0.1, 500, true);
-    cube.calculateTriangles(0.1, 1000, true);
-    cube.calculateTriangles(0.1, 1500, true);
-    cube.calculateTriangles(0.1, 2000, true);
-    cube.calculateTriangles(0.1, 2500, true);
-    cube.calculateTriangles(0.1, 3000, true);
-    cube.calculateTriangles(0.1, 3500, true);
-    cube.calculateTriangles(0.1, 4000, true);
-    cube.calculateTriangles(0.1, 4500, true);
-    cube.calculateTriangles(0.1, 5000, true);
-    cube.calculateTriangles(0.1, 5500, true);
-    cube.calculateTriangles(0.1, 5600, true);
-    cube.calculateTriangles(0.1, 5700, true);
-    cube.calculateTriangles(0.1, 5800, true);
-    cube.calculateTriangles(0.1, 5900, true);
-    cube.calculateTriangles(0.1, 5980, true);
-    cube.calculateTriangles(0.1, 5990, true);
-    cube.calculateTriangles(0.1, 6000, true);
-    cube.calculateTriangles(0.1, 6010, true);
-    cube.calculateTriangles(0.1, 6020, true);
-    cube.calculateTriangles(0.1, 6100, true);
-    cube.calculateTriangles(0.1, 6200, true);
-    cube.calculateTriangles(0.1, 6300, true);
-    cube.calculateTriangles(0.1, 6400, true);
-    cube.calculateTriangles(0.1, 6500, true);
-    cube.calculateTriangles(0.1, 7000, true);
-    cube.calculateTriangles(0.1, 7500, true);
-    cube.calculateTriangles(0.1, 8000, true);
-    cube.calculateTriangles(0.1, 8500, true);
-    cube.calculateTriangles(0.1, 9000, true);
-    cube.calculateTriangles(0.1, 9500, true);
-    cube.calculateTriangles(0.1, 10000, true);
-    cube.writeTrianglesIntoObjs("temp");
 }
 
 int main(int argc, char **argv) {
@@ -517,7 +529,7 @@ int main(int argc, char **argv) {
       FileUtils::list_files_in_directory(particle_foldername_to_input, tmp);
       max_n = tmp.size();
     }
-    // testingMarchingCube();
+    testingMarchingCube();
     while (!glfwWindowShouldClose(window)) {
       glfwPollEvents();
 
