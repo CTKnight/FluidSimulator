@@ -63,11 +63,11 @@ private:
   vector<REAL3> delta_p;
   vector<REAL> lambda;
 
-  #ifdef BUILD_CUDA
-  cuNSearch::NeighborhoodSearch nsearch;
-  #else
+  // #ifdef BUILD_CUDA
+  // cuNSearch::NeighborhoodSearch nsearch;
+  // #else
   CompactNSearch::NeighborhoodSearch nsearch;
-  #endif
+  // #endif
   vector<vector<vector<unsigned int>>> neighbor_search_results;
 };
 

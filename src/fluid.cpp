@@ -86,17 +86,17 @@ void Fluid::simulate(
   for (int i = 0; i < num_particle; i++) {
     // line 6: find neighboring particles
     neighbor_search_results[i].clear();
-    #ifdef BUILD_CUDA
-    auto &pointSet = nsearch.point_set(0);
-    auto count = pointSet.n_neighbors(0, i);
-    neighbor_search_results[i].resize(1);
-    // TODO: refactor as cudaFluid.cu implemetation
-    for (int j = 0; j < count; j++) {
-      neighbor_search_results[i][0].emplace_back(pointSet.neighbor(0, i, j));
-    }
-    #else
+    // #ifdef BUILD_CUDA
+    // auto &pointSet = nsearch.point_set(0);
+    // auto count = pointSet.n_neighbors(0, i);
+    // neighbor_search_results[i].resize(1);
+    // // TODO: refactor as cudaFluid.cu implemetation
+    // for (int j = 0; j < count; j++) {
+    //   neighbor_search_results[i][0].emplace_back(pointSet.neighbor(0, i, j));
+    // }
+    // #else
     nsearch.find_neighbors(0, i, neighbor_search_results[i]);
-    #endif
+    // #endif
   }
 
   for (int iter = 0; iter < solverIterations; iter++) {

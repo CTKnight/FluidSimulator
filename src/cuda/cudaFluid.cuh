@@ -10,6 +10,7 @@
 #include <thrust/device_vector.h>
 
 #include "cuNSearch.h"
+#include <CompactNSearch>
 #include "cudaUtils.h"
 #include "../real.h"
 #include "../fluidParameters.h"
@@ -50,7 +51,8 @@ private:
 
   // internal data
   static constexpr int default_capacity{30};
-  cuNSearch::NeighborhoodSearch nsearch;
+  // cuNSearch::NeighborhoodSearch nsearch;
+  CompactNSearch::NeighborhoodSearch nsearch;
   vector<int> neighbor_search_results_host;
   vector<int> neighbor_search_results_size_prefix_sum_host;
   int neighbor_search_results_dev_capacity;
