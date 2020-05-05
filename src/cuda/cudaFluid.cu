@@ -18,13 +18,13 @@ __global__ void simulate_update_position_predict_position(
     auto &positions_i = particle_positions[i];
     auto &velocities_i = particle_velocities[i];
     auto &preditced_positions_i = particle_preditced_position[i];
-    if (i == 0) {
-      printf("Thread 0 position: (%lf, %lf, %lf), acc: (%lf, %lf, %lf), delta_t: %lf\n", 
-        positions_i.x, positions_i.y, positions_i.z,
-        external_accelerations.x, external_accelerations.y, external_accelerations.z,
-        delta_t
-      );
-    }
+    // if (i == 0) {
+    //   printf("Thread 0 position: (%lf, %lf, %lf), acc: (%lf, %lf, %lf), delta_t: %lf\n", 
+    //     positions_i.x, positions_i.y, positions_i.z,
+    //     external_accelerations.x, external_accelerations.y, external_accelerations.z,
+    //     delta_t
+    //   );
+    // }
     velocities_i += external_accelerations * delta_t;
     preditced_positions_i = positions_i + velocities_i * delta_t;
   }
@@ -255,13 +255,15 @@ void Fluid_cuda::find_neighbors(){
     cudaMalloc(&neighbor_search_results_dev, sizeof(int) * neighbor_search_results_dev_capacity);
   }
 
+  #pragma omp parallel for
   for (int i = 0; i < num_particles; i++) {
     // line 6: find neighboring particles
     auto &pointSet = nsearch.point_set(0);
     auto count = pointSet.n_neighbors(0, i);
     const int start = i == 0 ? 0 :  neighbor_search_results_size_prefix_sum_host[i-1];
-
-    memcpy(&neighbor_search_results_host[start], pointSet.neighbor_list(0, i), sizeof(int)*count);
+    for (int j = 0; j < count; j++) {
+      neighbor_search_results_host[start + j] = pointSet.neighbor(0, i, j);
+    }
   }
 
   // copy neighbor results to device

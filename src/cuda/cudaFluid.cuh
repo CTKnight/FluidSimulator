@@ -47,7 +47,7 @@ private:
   unique_ptr<vector<REAL3>> particle_positions;
 
   // internal data
-  static constexpr int default_capacity{50};
+  static constexpr int default_capacity{30};
   cuNSearch::NeighborhoodSearch nsearch;
   vector<int> neighbor_search_results_host;
   vector<int> neighbor_search_results_size_prefix_sum_host;
