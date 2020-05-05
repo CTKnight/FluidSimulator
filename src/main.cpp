@@ -347,7 +347,11 @@ int main(int argc, char **argv) {
     n++;
     for (int t = 0; t < duration; t++) {
       for (int f = 0; f < fps; f++) {
+        const auto start = chrono::high_resolution_clock::now(); 
         app->simulate();
+        const auto end = chrono::high_resolution_clock::now();
+        const auto duration = chrono::duration_cast<chrono::milliseconds>(end-start);
+        cout << n << " frame" << ", simulated for " << app->getSimulationSteps() << " steps in " << duration.count() << " microsec." << endl; 
         // output per frame
         if (particle_folder_to_output_good) {
           writeFluidToFileN(particle_foldername_to_output, n, *fluid);

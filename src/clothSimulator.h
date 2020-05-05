@@ -43,6 +43,10 @@ public:
     return this->frames_per_sec;
   }
 
+  virtual int getSimulationSteps() {
+    return this->simulation_steps;
+  }
+
 private:
   virtual void initGUI(Screen *screen);
   void drawWireframe(GLShader &shader);
@@ -64,8 +68,8 @@ private:
 
   // Default simulation values
 
-  int frames_per_sec = 120;
-  int simulation_steps = 1;
+  int frames_per_sec = 30;
+  int simulation_steps = 4;
 
   CGL::Vector3D gravity = CGL::Vector3D(0, 0, 0);
   nanogui::Color color = nanogui::Color(1.0f, 1.0f, 1.0f, 1.0f);
