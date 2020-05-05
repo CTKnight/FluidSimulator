@@ -20,6 +20,9 @@ Fluid::Fluid(
     throw std::runtime_error("particle_positions == nullptr!");
   }
   this->particle_positions = std::move(particle_positions);
+  if (particle_velocities) {
+    this->particle_velocities = std::move(particle_velocities);
+  }
 }
 
 void Fluid::init() {
@@ -28,7 +31,6 @@ void Fluid::init() {
     if (num_particle != particle_velocities->size()) {
       throw std::runtime_error("particle_positions->size()  != particle_velocities->size()!");
     }
-    this->particle_velocities = std::move(particle_velocities);
   } else {
     auto velocities = make_unique<vector<REAL3>>();
     velocities->resize(this->particle_positions->size());

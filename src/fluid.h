@@ -42,6 +42,14 @@ struct Fluid {
     return *particle_positions;
   }
 
+  vector<REAL3> &getParticleVelocities() {
+    return *particle_velocities;
+  }
+
+  const vector<REAL3> &getParticleVelocities() const {
+    return *particle_velocities;
+  }
+
   void reset();
   // Fluid properties
 

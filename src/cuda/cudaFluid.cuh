@@ -21,6 +21,7 @@ class Fluid_cuda {
   public:
   Fluid_cuda(
     unique_ptr<vector<REAL3>> &&particle_positions,
+    unique_ptr<vector<REAL3>> &&particle_velocities,
     REAL h
   );
   ~Fluid_cuda();
@@ -45,6 +46,7 @@ private:
   // Fluid components
   // input
   unique_ptr<vector<REAL3>> particle_positions;
+  unique_ptr<vector<REAL3>> particle_velocities;
 
   // internal data
   static constexpr int default_capacity{30};

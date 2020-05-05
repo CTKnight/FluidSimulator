@@ -31,8 +31,8 @@ int main(int argc, char **argv) {
 
   std::string particle_foldername_to_output;
   int sec = 1;
-  constexpr int frames_per_sec = 120;
-  constexpr int simulation_steps = 1;
+  constexpr int frames_per_sec = 30;
+  constexpr int simulation_steps = 4;
   
   while ((c = getopt (argc, argv, "f:r:p:s:")) != -1) {
     switch (c) {
@@ -84,7 +84,8 @@ int main(int argc, char **argv) {
   }
 
   unique_ptr<vector<REAL3>> position_fluid_cuda = make_unique<vector<REAL3>>(fluid->getParticlePositions());
-  shared_ptr<Fluid_cuda> fluid_cuda = make_shared<Fluid_cuda>(std::move(position_fluid_cuda), fp->h);
+  unique_ptr<vector<REAL3>> velocities_fluid_cuda = make_unique<vector<REAL3>>(fluid->getParticleVelocities());
+  shared_ptr<Fluid_cuda> fluid_cuda = make_shared<Fluid_cuda>(std::move(position_fluid_cuda), std::move(velocities_fluid_cuda), fp->h);
   fluid_cuda->init();
   thrust::device_vector<Plane_cuda> collision_planes;
   collision_planes.resize(objects_std.size());
@@ -112,7 +113,7 @@ int main(int argc, char **argv) {
       }
       const auto end = chrono::high_resolution_clock::now();
       const auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
-      cout << "Simulated for " << simulation_steps << " steps in " << duration.count() << " microsec." << endl; 
+      cout << n << " frame" << ", simulated for " << simulation_steps << " steps in " << duration.count() << " microsec." << endl; 
       if (particle_folder_to_output_good) {
         writeFluidToFileN(particle_foldername_to_output, n, *fluid_cuda);
       }

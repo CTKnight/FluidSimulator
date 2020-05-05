@@ -101,8 +101,17 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
   }
 
   unique_ptr<vector<REAL3>> particles = make_unique<vector<REAL3>>();
+  unique_ptr<vector<REAL3>> velocites = make_unique<vector<REAL3>>();
   for (const auto &el: shape) {
     string type = el["type"];
+    int particleNum = 0;
+    REAL3 velocity = {0,0,0};
+    if (el.find("velocity") != el.end()) {
+      vector<REAL> velocity_vec = el["velocity"];
+      for (int i = 0; i < 3; i++) {
+        velocity[i] = velocity_vec[i];
+      }
+    }
     if (type == "cube") {
       vector<REAL> origin = el["origin"];
       vector<REAL> size = el["size"];
@@ -110,6 +119,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
         for (REAL j = origin[1] + cube_size_per_particle/2; j < origin[1] + size[1]; j += cube_size_per_particle) {
           for (REAL k = origin[2] + cube_size_per_particle/2; k < origin[2] + size[2]; k += cube_size_per_particle) {
             particles->emplace_back(REAL3{i, j, k});
+            velocites->emplace_back(velocity);
           }
         }
       }
@@ -122,6 +132,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
           for (REAL k = origin[2]-radius + cube_size_per_particle/2; k < origin[2]+radius; k += cube_size_per_particle) {
             if (pow(i-origin[0], 2) + pow(j-origin[1], 2) + pow(k-origin[2], 2)< r2) {
               particles->emplace_back(REAL3{i, j, k});
+              velocites->emplace_back(velocity);
             }
           }
         }
@@ -134,7 +145,7 @@ bool loadObjectsFromFile(string filename, shared_ptr<Fluid> &fluid, shared_ptr<F
     }
   }
   // h: SPH Basics p16
-  fluid = make_shared<Fluid>(std::move(particles), nullptr, h);
+  fluid = make_shared<Fluid>(std::move(particles), std::move(velocites), h);
   fp = make_shared<FluidParameters>(density, particle_mass, 0.1, h, epsilon, n, k, c);
 
   object = j[COLLISIONS];

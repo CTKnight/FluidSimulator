@@ -186,12 +186,14 @@ void copy_predicted_positions_to_position(
 
 Fluid_cuda::Fluid_cuda(
   unique_ptr<vector<REAL3>> &&particle_positions,
+  unique_ptr<vector<REAL3>> &&particle_velocities,
   REAL h
 ): nsearch(h) {
   if (particle_positions == nullptr) {
     throw std::runtime_error("particle_positions == nullptr!");
   }
   this->particle_positions = std::move(particle_positions);
+  this->particle_velocities = std::move(particle_velocities);
 }
 
 Fluid_cuda::~Fluid_cuda(){
@@ -212,7 +214,11 @@ void Fluid_cuda::init() {
   cudaMemcpy(particle_positions_device, particle_positions->data(), SIZE_REAL3_N, cudaMemcpyHostToDevice);
 
   cudaMalloc(&particle_velocities_device, SIZE_REAL3_N);
-  cudaMemset(particle_velocities_device, 0, SIZE_REAL3_N);
+  if (!particle_velocities) {
+    cudaMemset(particle_velocities_device, 0, SIZE_REAL3_N);
+  } else {
+    cudaMemcpy(particle_velocities_device, particle_velocities->data(), SIZE_REAL3_N, cudaMemcpyHostToDevice);
+  }
 
   cudaMalloc(&particle_predicted_positions_device, SIZE_REAL3_N);
   cudaMalloc(&delta_p_device, SIZE_REAL3_N);
