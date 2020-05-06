@@ -186,7 +186,7 @@ void testingMarchingCube() {
     for (int i = 0; i <= range; ++i) {
         char buffer[50], buffer2[50];
         int count = 0;
-        sprintf(buffer, "input/double30/fluid%05d.vtk", i);
+        sprintf(buffer, "input/double30/fluid%05d.vtp", i);
         sprintf(buffer2, "output/double30/fluid%05d", i);
         cout << buffer << endl;
 
