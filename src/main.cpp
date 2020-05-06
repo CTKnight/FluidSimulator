@@ -159,17 +159,21 @@ void testingMarchingCube() {
 //    maxbox = Vector3R(2.0, 2.0, 2.0);
 //    range = 120;
     // testing box for large30
-    minbox = Vector3R(0.0, 0.0, 0.0);
-    maxbox = Vector3R(2.0, 3.0, 2.0);
-    range = 210;
+//    minbox = Vector3R(0.0, 0.0, 0.0);
+//    maxbox = Vector3R(2.0, 3.0, 2.0);
+//    range = 210;
     // testing box for one30
 //    minbox = Vector3R(0.0, 0.0, 0.0);
 //    maxbox = Vector3R(2.0, 2.0, 4.0);
 //    range = 210;
     // testing box for double30
-//    minbox = Vector3R(0.0, 0.0, 0.0);
-//    maxbox = Vector3R(2.0, 2.0, 5.0);
-//    range = 210;
+    minbox = Vector3R(0.0, 0.0, 0.0);
+    maxbox = Vector3R(2.0, 2.0, 5.0);
+    range = 210;
+
+    // +- 1.0 of bounding box
+    minbox -= 1.0;
+    maxbox += 1.0;
 
     int num_cubes_per_side = 50;
     Real radius = 0.1;
@@ -182,8 +186,8 @@ void testingMarchingCube() {
     for (int i = 0; i <= range; ++i) {
         char buffer[50], buffer2[50];
         int count = 0;
-        sprintf(buffer, "input/large30/fluid%05d.vtp", i);
-        sprintf(buffer2, "output/large30/fluid%05d", i);
+        sprintf(buffer, "input/double30/fluid%05d.vtk", i);
+        sprintf(buffer2, "output/double30/fluid%05d", i);
         cout << buffer << endl;
 
         vector<array<Real, 3>> part;

@@ -119,15 +119,14 @@ double MarchingCube::getIsoValue(Vector3R &pos, double coefficient) {
 }
 
 Vector3R MarchingCube::getNormal(Vector3R &pos, double coefficient) {
-    double step_x = 0.01 * _unitGrid.x, step_y = 0.01 * _unitGrid.y, step_z = 0.01 * _unitGrid.z;
-    step_y = step_x; step_z = step_x;
+    double step_x = _unitGrid.x, step_y = _unitGrid.y, step_z = _unitGrid.z;
     Vector3R x_plus = Vector3R(pos.x + step_x, pos.y, pos.z), x_minus = Vector3R(pos.x - step_x, pos.y, pos.z);
     Vector3R y_plus = Vector3R(pos.x, pos.y + step_y, pos.z), y_minus = Vector3R(pos.x, pos.y - step_y, pos.z);
     Vector3R z_plus = Vector3R(pos.x, pos.y, pos.z + step_z), z_minus = Vector3R(pos.x, pos.y, pos.z - step_z);
     Vector3R normal = Vector3R(getIsoValue(x_plus, coefficient) - getIsoValue(x_minus, coefficient),
             getIsoValue(y_plus, coefficient) - getIsoValue(y_minus, coefficient),
             getIsoValue(z_plus, coefficient) - getIsoValue(z_minus, coefficient));
-    if (normal.norm() > 1e-9) normal.normalize();
+    normal.normalize();
     return normal;
 }
 
