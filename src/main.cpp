@@ -167,8 +167,12 @@ void testingMarchingCube() {
 //    maxbox = Vector3R(2.0, 2.0, 4.0);
 //    range = 210;
     // testing box for double30
+//    minbox = Vector3R(0.0, 0.0, 0.0);
+//    maxbox = Vector3R(2.0, 2.0, 5.0);
+//    range = 210;
+    // testing box for million30
     minbox = Vector3R(0.0, 0.0, 0.0);
-    maxbox = Vector3R(2.0, 2.0, 5.0);
+    maxbox = Vector3R(8.0, 8.0, 8.0);
     range = 210;
 
     // +- 1.0 of bounding box
@@ -186,8 +190,8 @@ void testingMarchingCube() {
     for (int i = 0; i <= range; ++i) {
         char buffer[50], buffer2[50];
         int count = 0;
-        sprintf(buffer, "input/double30/fluid%05d.vtp", i);
-        sprintf(buffer2, "output/double30/fluid%05d", i);
+        sprintf(buffer, "input/million30/fluid%05d.vtp", i);
+        sprintf(buffer2, "output/million30/fluid%05d", i);
         cout << buffer << endl;
 
         vector<array<Real, 3>> part;
