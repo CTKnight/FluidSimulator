@@ -10,7 +10,7 @@
 - Yanda Li
 - Kailun Wan
 
-### Links for our deliverables
+# Links for our deliverables
 
 We have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from [here](https://youtu.be/SfTIv-HlWFM). And [here](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) is our slides to explain our ideas for this project in the video. 
 
