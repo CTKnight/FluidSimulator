@@ -4,9 +4,9 @@
 
 ## Team Member
 
-- Jiewen Lai   jw.lai@berkeley.edu
-- Yanda Li     yanda_li@berkeley.edu
-- Kailun Wan   kailunwan@berkeley.edu
+- Jiewen Lai
+- Yanda Li
+- Kailun Wan
 
 ## Abstract
 
@@ -18,12 +18,13 @@ We explained our technical approaches in detail in our final report. You can fin
 
 ## Deliverables
 
-For our deliverables, we have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from here:
+For our deliverables, we have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from [here](https://youtu.be/SfTIv-HlWFM).
 
-We also attach our report to explain the details of our project. You can open it from here:
+We also attach our report to explain the details of our project. You can open it from [here](https://www.google.com).
 
-Our codes for the project are released on our GitHub repo. You can find them here:
+Our codes for the project are released on our GitHub repo. You can find them [here](https://github.com/CTKnight/FluidSimulator).
 
 ## Final remarks
 
-You can consult README.md on our repo for more related information. Thank you, and hope you like our project!
+You can consult [README.md](https://github.com/CTKnight/FluidSimulator/blob/master/README.md) and [BUILDING.md](https://github.com/CTKnight/FluidSimulator/blob/master/BUILDING.md) on our repo for more related information. Thank you, and hope you like our project!
+
