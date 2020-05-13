@@ -26,9 +26,9 @@ For our deliverables, here are some rendered images for our liquid particles:
 
 In addition, we have a rendered millions of particles with simple video of dam break for our liquid cube:
 
-<img src="large_frame.png" alt="drawing" width="450" height="450"/> <img src="large30images.gif" alt="drawing" width="450" height="450"/> 
+<img src="million_particle_frame.png" alt="drawing" width="450" height="450"/> <img src="large30images.gif" alt="drawing" width="450" height="450"/> 
 
-we have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from [here](https://youtu.be/SfTIv-HlWFM). And [here](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) is our slides to explain our ideas for this project in the video. 
+We have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from [here](https://youtu.be/SfTIv-HlWFM). And [here](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) is our slides to explain our ideas for this project in the video. 
 
 We also attach our report to explain the details of our project. You can open it from [here](https://www.google.com).
 
