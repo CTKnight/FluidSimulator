@@ -1,10 +1,8 @@
 # CS 284A: Computer Graphics and Imaging, Spring 2020
 
-![Alt Text](teaser.png)
-
 ## Final Project: Position Based Fluid Simulation and Surface Rendering
 
-<img src="large_frame.png" alt="drawing" width="300" height="300"/> <img src="one_frame.png" alt="drawing" width="300" height="300"/> <img src="double_frame.png" alt="drawing" width="300" height="300"/>
+![Alt Text](teaser.png)
 
 ## Team Member
 
@@ -22,7 +20,15 @@ We explained our technical approaches in detail in our final report. You can fin
 
 ## Deliverables
 
-For our deliverables, we have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from [here](https://youtu.be/SfTIv-HlWFM). And [here](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) is our slides to explain our ideas for this project in the video. 
+For our deliverables, here are some rendered images for our liquid particles:
+
+<img src="large_frame.png" alt="drawing" width="300" height="300"/> <img src="one_frame.png" alt="drawing" width="300" height="300"/> <img src="double_frame.png" alt="drawing" width="300" height="300"/>
+
+In addition, we have a rendered millions of particles with simple video of dam break for our liquid cube:
+
+<img src="large_frame.png" alt="drawing" width="450" height="450"/> <img src="large30images.gif" alt="drawing" width="450" height="450"/> 
+
+we have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from [here](https://youtu.be/SfTIv-HlWFM). And [here](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) is our slides to explain our ideas for this project in the video. 
 
 We also attach our report to explain the details of our project. You can open it from [here](https://www.google.com).
 
