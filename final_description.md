@@ -26,4 +26,4 @@ Our codes for the project are released on our GitHub repo. You can find them [he
 
 ## Final remarks
 
-You can consult README.md on our repo for more related information. Thank you, and hope you like our project!
+You can consult [README.md](https://github.com/CTKnight/FluidSimulator/blob/master/README.md) on our repo for more related information. Thank you, and hope you like our project!
