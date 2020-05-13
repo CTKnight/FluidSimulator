@@ -12,13 +12,13 @@
 
 # Links
 
-- **[CS284A Final Report pdf](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing)**
+## **[CS284A Final Report pdf](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing)**
 
-- **[Final Video](https://youtu.be/SfTIv-HlWFM)**
+## **[Final Video](https://youtu.be/SfTIv-HlWFM)**
 
-- [Slides](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) 
+## [Slides](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) 
 
-- [GitHub Repo](https://github.com/CTKnight/FluidSimulator)
+## [GitHub Repo](https://github.com/CTKnight/FluidSimulator)
 
 # Abstract
 
@@ -33,15 +33,19 @@ We explained our technical approaches in detail in our final report. You can fin
 For our results, here are some rendered images for our liquid surfaces:
 
 ![Dam break](large_frame.png)
+
 *A dam break scenario*
 
 ![Another dam break](one_frame.png)
+
 *Another dam break scenario*
 
 ![1 million particle](million_particle_frame.png)
+
 *A frame of simulating 1 millison particles*
 
 ![Dam break gif](large30images.gif)
+
 *A gif of Dam break*
 
 # Final remarks
