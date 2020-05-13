@@ -4,7 +4,7 @@
 
 ## Final Project: Position Based Fluid Simulation and Surface Rendering
 
-<img src="large_frame.png" alt="drawing" width="300" height="300"/>
+<img src="large_frame.png" alt="drawing" width="300" height="300"/> <img src="one_frame.png" alt="drawing" width="300" height="300"/>
 
 ## Team Member
 
