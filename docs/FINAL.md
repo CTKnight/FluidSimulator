@@ -14,7 +14,7 @@
 
 We have a final video to highlight the results and explain our technologies of this project at a high level. You can take a look at it from [here](https://youtu.be/SfTIv-HlWFM). And [here](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) is our slides to explain our ideas for this project in the video. 
 
-We also attach our final report to explain the details of our project. You can open it from [here](https://www.google.com).
+We also attach our final report to explain the details of our project. You can open it from [here](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing).
 
 Our codes for the project are released on our GitHub repo. You can find them [here](https://github.com/CTKnight/FluidSimulator).
 
