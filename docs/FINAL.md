@@ -20,7 +20,7 @@ We explained our technical approaches in detail in our final report. You can fin
 
 ## Deliverables
 
-For our deliverables, here are some rendered images for our liquid particles:
+For our deliverables, here are some rendered images for our liquid surfaces:
 
 <img src="large_frame.png" alt="drawing" width="300" height="300"/> <img src="one_frame.png" alt="drawing" width="300" height="300"/> <img src="double_frame.png" alt="drawing" width="300" height="300"/>
 
