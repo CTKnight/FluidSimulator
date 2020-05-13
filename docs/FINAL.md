@@ -4,6 +4,8 @@
 
 ## Final Project: Position Based Fluid Simulation and Surface Rendering
 
+![alt-text-1](large_frame.png) ![alt-text-2](one_frame.png) ![alt-text-3](double_frame.png)
+
 ## Team Member
 
 - Jiewen Lai
