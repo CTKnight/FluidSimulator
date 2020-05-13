@@ -12,13 +12,13 @@
 
 # Links for our deliverables
 
-[final video](https://youtu.be/SfTIv-HlWFM). 
+[final video](https://youtu.be/SfTIv-HlWFM)
 
 [slides to explain our ideas](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) 
 
-[final report](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing).
+[final report](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing)
 
-[GitHub repo](https://github.com/CTKnight/FluidSimulator).
+[GitHub repo](https://github.com/CTKnight/FluidSimulator)
 
 # Abstract
 
