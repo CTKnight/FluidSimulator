@@ -1,6 +1,6 @@
 # CS 284A: Computer Graphics and Imaging, Spring 2020
 
-![Alt Text](https://drive.google.com/file/d/12mzXFBUA9FxsckuDCdYbKOz8rOWEFtMp/view?usp=sharing)
+![Alt Text](large30images.gif)
 
 ## Final Project: Position Based Fluid Simulation and Surface Rendering
 
