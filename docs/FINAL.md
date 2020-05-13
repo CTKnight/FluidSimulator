@@ -22,6 +22,8 @@ For our deliverables, we have a final video to highlight the results and explain
 
 We also attach our report to explain the details of our project. You can open it from [here](https://www.google.com).
 
+And [here](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) is our slides to explain our ideas for this project. 
+
 Our codes for the project are released on our GitHub repo. You can find them [here](https://github.com/CTKnight/FluidSimulator).
 
 ## Final remarks
