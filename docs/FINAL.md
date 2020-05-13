@@ -2,7 +2,7 @@
 
 # Final Project: Position Based Fluid Simulation and Surface Rendering
 
-![Alt Text](teaser.png)
+![Teaser](teaser.png)
 
 #  Team Member
 
@@ -10,15 +10,15 @@
 - Yanda Li
 - Kailun Wan
 
-# Links for our deliverables
+# Links
 
-[final video](https://youtu.be/SfTIv-HlWFM)
+- **[CS284A Final Report pdf](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing)**
 
-[slides to explain our ideas](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) 
+- **[Final Video](https://youtu.be/SfTIv-HlWFM)**
 
-[final report](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing)
+- [Slides](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing) 
 
-[GitHub repo](https://github.com/CTKnight/FluidSimulator)
+- [GitHub Repo](https://github.com/CTKnight/FluidSimulator)
 
 # Abstract
 
@@ -26,21 +26,25 @@ In the course, we learned how to make a simulation of cloth using the mass and s
 
 # Technical Approaches
 
-We explained our technical approaches in detail in our final report. You can find the link above in the "Links for our deliverables" section.
+We explained our technical approaches in detail in our final report. You can find the link above in the "Links" section above.
 
-# Deliverables
+# Results
 
-For our deliverables, here are some rendered images for our liquid surfaces:
+For our results, here are some rendered images for our liquid surfaces:
 
-<img src="large_frame.png" alt="drawing" width="300" height="300"/> <img src="one_frame.png" alt="drawing" width="300" height="300"/> <img src="double_frame.png" alt="drawing" width="300" height="300"/>
+![Dam break](large_frame.png)
+*A dam break scenario*
 
-In addition, we have a rendered millions of particles with simple video of dam break for our liquid cube:
+![Another dam break](one_frame.png)
+*Another dam break scenario*
 
-<img src="million_particle_frame.png" alt="drawing" width="450" height="450"/> <img src="large30images.gif" alt="drawing" width="450" height="450"/> 
+![1 million particle](million_particle_frame.png)
+*A frame of simulating 1 millison particles*
 
-For other deliverables, you can check the links on the top of this page.
+![Dam break gif](large30images.gif)
+*A gif of Dam break*
 
 # Final remarks
 
-You can consult [README.md](https://github.com/CTKnight/FluidSimulator/blob/master/README.md) and [BUILDING.md](https://github.com/CTKnight/FluidSimulator/blob/master/BUILDING.md) on our repo for more related information. Thank you, and hope you like our project!
+You can consult [PROPOSAL.md](PROPOSAL.md), [MILESTONE.md](MILESTONE.md) and [BUILDING.md](BUILDING.md) in our repo for more information. Thank you, and hope you like our project!
 
