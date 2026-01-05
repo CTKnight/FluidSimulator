@@ -6,6 +6,8 @@
 #include <string>
 #include <stdio.h>
 #include <unordered_set>
+#include <cerrno>
+#include <cctype>
 #include <stdlib.h> // atoi for getopt inputs
 
 #ifdef _WIN32
@@ -208,14 +210,54 @@ bool find_project_root(const std::vector<std::string>& search_paths, std::string
 }
 
 int mkdir_main(const char *dir) {
-  int err;
-  // from https://stackoverflow.com/questions/23427804/cant-find-mkdir-function-in-dirent-h-for-windows
-  #ifdef _WIN32
-    err = _mkdir(dir);
-  #else 
-    err = mkdir(dir,0755);
-  #endif
-  return err;
+  if (dir == nullptr || *dir == '\0') {
+    return -1;
+  }
+
+  std::string path(dir);
+  std::string current;
+  size_t start = 0;
+
+  if (path.size() >= 2 && std::isalpha(static_cast<unsigned char>(path[0])) && path[1] == ':') {
+    current = path.substr(0, 2);
+    start = 2;
+    if (path.size() > 2 && (path[2] == '/' || path[2] == '\\')) {
+      current += "/";
+      start = 3;
+    }
+  } else if (path[0] == '/' || path[0] == '\\') {
+    current = "/";
+    start = 1;
+  }
+
+  while (start < path.size()) {
+    const size_t sep = path.find_first_of("/\\", start);
+    const std::string part = path.substr(start, sep - start);
+    if (!part.empty()) {
+      if (!current.empty() && current.back() != '/' && current.back() != '\\') {
+        current += "/";
+      }
+      current += part;
+      errno = 0;
+      // from https://stackoverflow.com/questions/23427804/cant-find-mkdir-function-in-dirent-h-for-windows
+      #ifdef _WIN32
+        const int err = _mkdir(current.c_str());
+      #else
+        const int err = mkdir(current.c_str(), 0755);
+      #endif
+      if (err != 0) {
+        if (errno != EEXIST || !FileUtils::directory_exists(current)) {
+          return -1;
+        }
+      }
+    }
+    if (sep == std::string::npos) {
+      break;
+    }
+    start = sep + 1;
+  }
+
+  return 0;
 }
 
 void writeFluidToFileN(const string &particle_foldername_to_output, int n, const Fluid &fluid) {
