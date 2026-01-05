@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.9)
 project(FluidSim)
 
 #-------------------------------------------------------------------------------
+# C++ standard
+#-------------------------------------------------------------------------------
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+#-------------------------------------------------------------------------------
 # Build options
 #-------------------------------------------------------------------------------
 option(BUILD_LIBCGL    "Build with libCGL"            ON)
@@ -38,7 +44,7 @@ if(APPLE)
   # Clang configuration
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
-    set(CLANG_CXX_FLAGS "-std=c++14 -m64")
+    set(CLANG_CXX_FLAGS "-std=c++17 -m64")
 
     if(BUILD_DEBUG)
       set(CMAKE_BUILD_TYPE Debug)
@@ -57,7 +63,7 @@ if(APPLE)
   # GCC configuration
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-    set(GCC_CXX_FLAGS "-std=gnu++14 -m64")
+    set(GCC_CXX_FLAGS "-std=gnu++17 -m64")
 
     if(BUILD_DEBUG)
       set(CMAKE_BUILD_TYPE Debug)
@@ -81,7 +87,7 @@ if(UNIX AND NOT APPLE)
   # GCC only
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-    set(GCC_CXX_FLAGS "-std=gnu++14 -m64")
+    set(GCC_CXX_FLAGS "-std=gnu++17 -m64")
     set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -Wno-deprecated-declarations")
     set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -Wno-misleading-indentation")
 
@@ -130,7 +136,7 @@ if(WIN32)
 
   if(MSVC)
 
-    set(MSVC_CXX_FLAGS "-std=gnu++14")
+    set(MSVC_CXX_FLAGS "/std:c++17")
 
     if(BUILD_DEBUG)
         set(CMAKE_BUILD_TYPE Debug)
@@ -144,7 +150,7 @@ if(WIN32)
 
   if(MINGW)
 
-    set(MSVC_CXX_FLAGS "-std=gnu++14")
+    set(MSVC_CXX_FLAGS "-std=gnu++17")
 
     if(BUILD_DEBUG)
         set(CMAKE_BUILD_TYPE Debug)
@@ -230,7 +236,22 @@ if (BUILD_CUDA)
   else (USE_DOUBLE)
     set(CUNSEARCH_USE_DOUBLE_PRECISION  OFF  CACHE BOOL " " FORCE)
   endif (USE_DOUBLE)
+  set(CMAKE_CUDA_STANDARD 17)
+  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
   enable_language(CUDA)
+  find_package(CUDAToolkit REQUIRED)
+  set(_cuda_include_dirs ${CUDAToolkit_INCLUDE_DIRS})
+  if (NOT _cuda_include_dirs)
+    set(_cuda_include_dirs ${CUDAToolkit_INCLUDE_DIR})
+  endif()
+  set(CUDA_INCLUDE_DIRS ${_cuda_include_dirs})
+  foreach(_dir IN LISTS _cuda_include_dirs)
+    if (EXISTS "${_dir}/cccl/thrust")
+      list(APPEND CUDA_INCLUDE_DIRS "${_dir}/cccl")
+    endif()
+  endforeach()
+  unset(_cuda_include_dirs)
+  set(CUDA_LIBRARIES CUDA::cudart)
   add_subdirectory(ext/cuNSearch)
   if(WIN32)
   set_target_properties(cuNSearch PROPERTIES

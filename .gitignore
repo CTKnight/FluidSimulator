@@ -39,4 +39,8 @@ CMakeSettings.json
 *.out
 *.app
 build
+build-cuda
+output
 xcode
+
+output/
