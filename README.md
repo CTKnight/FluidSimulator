@@ -10,7 +10,7 @@ final project.
 - Headless mode with particle cache output for offline rendering.
 
 ## Project resources
-- [Project website](https://ctknight.github.io/FluidSimulator/)
+- [Project website](docs/index.md)
 - [Final report (PDF)](https://drive.google.com/file/d/14NBuwOkBv4B0xg0AGVYWsEsgpjXjXg6a/view?usp=sharing)
 - [Final video](https://youtu.be/SfTIv-HlWFM)
 - [Slides](https://docs.google.com/presentation/d/1VrIeeL3HWLHeoGgKl4LTh8TZWxva0XWIZIpgnCNel8A/edit?usp=sharing)
