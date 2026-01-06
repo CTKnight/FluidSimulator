@@ -1,9 +1,58 @@
 #include "fluid/core.h"
 
+#include <algorithm>
+#include <cmath>
+
 namespace fluid {
+
+namespace {
+
+constexpr float kPi = 3.14159265358979323846f;
+
+float poly6_kernel(float r2, float h) {
+  const float h2 = h * h;
+  if (r2 > h2) {
+    return 0.0f;
+  }
+  const float diff = h2 - r2;
+  const float diff3 = diff * diff * diff;
+  const float h4 = h2 * h2;
+  const float h9 = h4 * h4 * h;
+  const float coeff = 315.0f / (64.0f * kPi * h9);
+  return coeff * diff3;
+}
+
+float spiky_gradient_factor(float r, float h) {
+  if (r > h) {
+    return 0.0f;
+  }
+  const float h2 = h * h;
+  const float h6 = h2 * h2 * h2;
+  const float diff = h - r;
+  const float coeff = -45.0f / (kPi * h6);
+  return coeff * diff * diff / r;
+}
+
+}  // namespace
 
 int core_version() {
   return 1;
+}
+
+void CpuScratch::resize(std::size_t particle_count) {
+  pred_x.resize(particle_count, 0.0f);
+  pred_y.resize(particle_count, 0.0f);
+  pred_z.resize(particle_count, 0.0f);
+  delta_x.resize(particle_count, 0.0f);
+  delta_y.resize(particle_count, 0.0f);
+  delta_z.resize(particle_count, 0.0f);
+  lambda.resize(particle_count, 0.0f);
+  neighbor_prefix_sum.resize(particle_count, 0);
+}
+
+void CpuScratch::clear_neighbors() {
+  neighbor_indices.clear();
+  std::fill(neighbor_prefix_sum.begin(), neighbor_prefix_sum.end(), 0);
 }
 
 State make_state(std::size_t particle_count) {
@@ -14,17 +63,172 @@ State make_state(std::size_t particle_count) {
   state.vel_x.resize(particle_count, 0.0f);
   state.vel_y.resize(particle_count, 0.0f);
   state.vel_z.resize(particle_count, 0.0f);
+  state.cpu.resize(particle_count);
   return state;
 }
 
 void step(const Params& params, State& state) {
   const std::size_t count = state.size();
-  for (std::size_t i = 0; i < count; ++i) {
-    state.pos_x[i] += state.vel_x[i] * params.dt;
-    state.pos_y[i] += state.vel_y[i] * params.dt;
-    state.pos_z[i] += state.vel_z[i] * params.dt;
+  state.cpu.resize(count);
+  if (count == 0) {
+    state.time += params.dt;
+    return;
   }
-  state.time += params.dt;
+
+  CpuScratch& scratch = state.cpu;
+  const std::size_t previous_neighbors = scratch.neighbor_indices.size();
+  scratch.clear_neighbors();
+  if (previous_neighbors > 0 && params.neighbor_reserve_factor > 0.0f) {
+    const std::size_t neighbor_reserve = static_cast<std::size_t>(
+        std::ceil(previous_neighbors * params.neighbor_reserve_factor));
+    if (neighbor_reserve > scratch.neighbor_indices.capacity()) {
+      scratch.neighbor_indices.reserve(neighbor_reserve);
+    }
+  }
+
+  const float dt = params.dt;
+  const float h = params.h;
+  const float h2 = h * h;
+
+  // Apply forces and predict positions (PBF integration step).
+  for (std::size_t i = 0; i < count; ++i) {
+    state.vel_x[i] += params.external_forces.x * dt;
+    state.vel_y[i] += params.external_forces.y * dt;
+    state.vel_z[i] += params.external_forces.z * dt;
+    scratch.pred_x[i] = state.pos_x[i] + state.vel_x[i] * dt;
+    scratch.pred_y[i] = state.pos_y[i] + state.vel_y[i] * dt;
+    scratch.pred_z[i] = state.pos_z[i] + state.vel_z[i] * dt;
+  }
+
+  // Build neighbor list from predicted positions (naive O(N^2) for now).
+  for (std::size_t i = 0; i < count; ++i) {
+    const float px = scratch.pred_x[i];
+    const float py = scratch.pred_y[i];
+    const float pz = scratch.pred_z[i];
+    for (std::size_t j = 0; j < count; ++j) {
+      if (i == j) {
+        continue;
+      }
+      const float dx = px - scratch.pred_x[j];
+      const float dy = py - scratch.pred_y[j];
+      const float dz = pz - scratch.pred_z[j];
+      const float r2 = dx * dx + dy * dy + dz * dz;
+      if (r2 < h2) {
+        scratch.neighbor_indices.push_back(static_cast<int>(j));
+      }
+    }
+    scratch.neighbor_prefix_sum[i] =
+        static_cast<int>(scratch.neighbor_indices.size());
+  }
+
+  const float density = params.density;
+  const float inv_density = 1.0f / density;
+  const float particle_mass = params.particle_mass;
+  const float grad_scale = particle_mass * inv_density;
+  const float epsilon = params.epsilon;
+
+  // Solver loop: compute lambdas, then position corrections.
+  for (int iter = 0; iter < params.solver_iterations; ++iter) {
+    for (std::size_t i = 0; i < count; ++i) {
+      const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
+      const int end = scratch.neighbor_prefix_sum[i];
+      const float px = scratch.pred_x[i];
+      const float py = scratch.pred_y[i];
+      const float pz = scratch.pred_z[i];
+
+      float rho = 0.0f;
+      float grad_sum_x = 0.0f;
+      float grad_sum_y = 0.0f;
+      float grad_sum_z = 0.0f;
+      float sum_grad2 = 0.0f;
+
+      for (int idx = start; idx < end; ++idx) {
+        const int j = scratch.neighbor_indices[idx];
+        const float dx = px - scratch.pred_x[j];
+        const float dy = py - scratch.pred_y[j];
+        const float dz = pz - scratch.pred_z[j];
+        const float r2 = dx * dx + dy * dy + dz * dz;
+        rho += poly6_kernel(r2, h);
+
+        if (r2 < h2) {
+          const float r = std::sqrt(r2);
+          const float grad_factor = spiky_gradient_factor(r, h);
+          const float gx = grad_factor * dx;
+          const float gy = grad_factor * dy;
+          const float gz = grad_factor * dz;
+          grad_sum_x += gx;
+          grad_sum_y += gy;
+          grad_sum_z += gz;
+          const float grad_jx = -grad_scale * gx;
+          const float grad_jy = -grad_scale * gy;
+          const float grad_jz = -grad_scale * gz;
+          sum_grad2 += grad_jx * grad_jx + grad_jy * grad_jy +
+                       grad_jz * grad_jz;
+        }
+      }
+
+      rho += poly6_kernel(0.0f, h);
+      rho *= particle_mass;
+
+      const float C = rho * inv_density - 1.0f;
+      const float grad_ix = grad_scale * grad_sum_x;
+      const float grad_iy = grad_scale * grad_sum_y;
+      const float grad_iz = grad_scale * grad_sum_z;
+      sum_grad2 += grad_ix * grad_ix + grad_iy * grad_iy + grad_iz * grad_iz;
+      scratch.lambda[i] = -C / (sum_grad2 + epsilon);
+    }
+
+    for (std::size_t i = 0; i < count; ++i) {
+      const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
+      const int end = scratch.neighbor_prefix_sum[i];
+      const float px = scratch.pred_x[i];
+      const float py = scratch.pred_y[i];
+      const float pz = scratch.pred_z[i];
+      const float lambda_i = scratch.lambda[i];
+
+      float delta_x = 0.0f;
+      float delta_y = 0.0f;
+      float delta_z = 0.0f;
+
+      for (int idx = start; idx < end; ++idx) {
+        const int j = scratch.neighbor_indices[idx];
+        const float dx = px - scratch.pred_x[j];
+        const float dy = py - scratch.pred_y[j];
+        const float dz = pz - scratch.pred_z[j];
+        const float r2 = dx * dx + dy * dy + dz * dz;
+        if (r2 < h2) {
+          const float r = std::sqrt(r2);
+          const float grad_factor = spiky_gradient_factor(r, h);
+          const float s = lambda_i + scratch.lambda[j];
+          delta_x += s * grad_factor * dx;
+          delta_y += s * grad_factor * dy;
+          delta_z += s * grad_factor * dz;
+        }
+      }
+
+      scratch.delta_x[i] = delta_x * inv_density;
+      scratch.delta_y[i] = delta_y * inv_density;
+      scratch.delta_z[i] = delta_z * inv_density;
+    }
+
+    for (std::size_t i = 0; i < count; ++i) {
+      scratch.pred_x[i] += scratch.delta_x[i];
+      scratch.pred_y[i] += scratch.delta_y[i];
+      scratch.pred_z[i] += scratch.delta_z[i];
+    }
+  }
+
+  // Update velocities and commit predicted positions.
+  for (std::size_t i = 0; i < count; ++i) {
+    state.vel_x[i] = (scratch.pred_x[i] - state.pos_x[i]) / dt;
+    state.vel_y[i] = (scratch.pred_y[i] - state.pos_y[i]) / dt;
+    state.vel_z[i] = (scratch.pred_z[i] - state.pos_z[i]) / dt;
+    state.pos_x[i] = scratch.pred_x[i];
+    state.pos_y[i] = scratch.pred_y[i];
+    state.pos_z[i] = scratch.pred_z[i];
+  }
+
+  state.time += dt;
 }
 
 }  // namespace fluid
