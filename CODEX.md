@@ -47,3 +47,11 @@ FluidSimulator. Keep it short, practical, and updated as the rewrite progresses.
 - Update `README.md` and this file when build or run steps change.
 - Add minimal validation scripts when new subsystems are introduced
   (collision types, solvers, IO formats).
+
+## Future Python GUI (option 1: offline playback)
+If we add a Python GUI later, keep the core C++/CUDA isolated and let the GUI
+read headless outputs (no bindings). Suggested layout:
+- `python/pyproject.toml`
+- `python/src/fluidpy/` (file readers, playback logic)
+- `python/src/fluidpy/gui/` (GUI code)
+- `python/assets/` (icons, UI assets)
