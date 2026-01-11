@@ -56,6 +56,20 @@ float spiky_gradient_factor(float r, float h) {
   return coeff * diff * diff;
 }
 
+float pow_ratio_n(float ratio, int n) {
+  if (n == 2) {
+    return ratio * ratio;
+  }
+  if (n == 3) {
+    return ratio * ratio * ratio;
+  }
+  if (n == 4) {
+    const float r2 = ratio * ratio;
+    return r2 * r2;
+  }
+  return std::pow(ratio, static_cast<float>(n));
+}
+
 }  // namespace
 
 int core_version() {
@@ -70,6 +84,17 @@ void CpuScratch::resize(std::size_t particle_count) {
   delta_y.resize(particle_count, 0.0f);
   delta_z.resize(particle_count, 0.0f);
   lambda.resize(particle_count, 0.0f);
+  rho.resize(particle_count, 0.0f);
+  dv_x.resize(particle_count, 0.0f);
+  dv_y.resize(particle_count, 0.0f);
+  dv_z.resize(particle_count, 0.0f);
+  omega_x.resize(particle_count, 0.0f);
+  omega_y.resize(particle_count, 0.0f);
+  omega_z.resize(particle_count, 0.0f);
+  omega_mag.resize(particle_count, 0.0f);
+  eta_x.resize(particle_count, 0.0f);
+  eta_y.resize(particle_count, 0.0f);
+  eta_z.resize(particle_count, 0.0f);
   neighbor_prefix_sum.resize(particle_count, 0);
   grid_entries.resize(particle_count);
 }
@@ -115,6 +140,12 @@ void step(const Params& params, State& state) {
   const float h2 = h * h;
   const float min_r = 0.01f * h;
   const float min_r2 = min_r * min_r;
+  const bool scorr_enabled = params.enable_scorr && params.scorr_k != 0.0f;
+  const float scorr_dq_coeff =
+      (params.scorr_dq_coeff > 0.0f) ? params.scorr_dq_coeff : 0.1f;
+  const float scorr_dq = scorr_dq_coeff * h;
+  const float wdq = scorr_enabled ? poly6_kernel(scorr_dq * scorr_dq, h) : 0.0f;
+  const float scorr_inv_wdq = (wdq > 1e-12f) ? (1.0f / wdq) : 0.0f;
 
   // Apply forces and predict positions (PBF integration step).
   for (std::size_t i = 0; i < count; ++i) {
@@ -281,6 +312,7 @@ void step(const Params& params, State& state) {
 
       rho += poly6_kernel(0.0f, h);
       rho *= particle_mass;
+      scratch.rho[i] = rho;
 
       const float C = rho * inv_density - 1.0f;
       const float grad_ix = grad_scale * grad_sum_x;
@@ -311,7 +343,13 @@ void step(const Params& params, State& state) {
         if (r2 < h2) {
           const float r = std::sqrt(r2 < min_r2 ? min_r2 : r2);
           const float grad_factor = spiky_gradient_factor(r, h);
-          const float s = lambda_i + scratch.lambda[j];
+          float s = lambda_i + scratch.lambda[j];
+          if (scorr_enabled && scorr_inv_wdq > 0.0f) {
+            const float W = poly6_kernel(r2, h);
+            const float ratio = W * scorr_inv_wdq;
+            const float scorr = -params.scorr_k * pow_ratio_n(ratio, params.scorr_n);
+            s += scorr;
+          }
           delta_x += s * grad_factor * dx;
           delta_y += s * grad_factor * dy;
           delta_z += s * grad_factor * dz;

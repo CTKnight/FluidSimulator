@@ -28,6 +28,15 @@ struct Params {
   int solver_iterations = 4;
   float neighbor_reserve_factor = 1.5f;
   bool use_uniform_grid = true;
+  bool enable_scorr = true;
+  bool enable_xsph = false;
+  bool enable_vorticity = false;
+  float scorr_k = 0.0001f;
+  int scorr_n = 4;
+  float scorr_dq_coeff = 0.3f;
+  float visc_c = 0.02f;
+  float vort_epsilon = 0.5f;
+  float vort_norm_eps = 1e-6f;
   struct Vec3 {
     float x = 0.0f;
     float y = -9.8f;
@@ -88,6 +97,17 @@ struct CpuScratch {
   std::vector<float> delta_y;
   std::vector<float> delta_z;
   std::vector<float> lambda;
+  std::vector<float> rho;
+  std::vector<float> dv_x;
+  std::vector<float> dv_y;
+  std::vector<float> dv_z;
+  std::vector<float> omega_x;
+  std::vector<float> omega_y;
+  std::vector<float> omega_z;
+  std::vector<float> omega_mag;
+  std::vector<float> eta_x;
+  std::vector<float> eta_y;
+  std::vector<float> eta_z;
   std::vector<int> neighbor_indices;
   std::vector<int> neighbor_prefix_sum;
   std::vector<CellEntry> grid_entries;
