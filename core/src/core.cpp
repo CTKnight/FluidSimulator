@@ -148,6 +148,9 @@ void step(const Params& params, State& state) {
   const float scorr_inv_wdq = (wdq > 1e-12f) ? (1.0f / wdq) : 0.0f;
 
   // Apply forces and predict positions (PBF integration step).
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
   for (std::size_t i = 0; i < count; ++i) {
     state.vel_x[i] += params.external_forces.x * dt;
     state.vel_y[i] += params.external_forces.y * dt;
@@ -272,6 +275,9 @@ void step(const Params& params, State& state) {
 
   // Solver loop: compute lambdas, then position corrections.
   for (int iter = 0; iter < params.solver_iterations; ++iter) {
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
     for (std::size_t i = 0; i < count; ++i) {
       const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
       const int end = scratch.neighbor_prefix_sum[i];
@@ -322,6 +328,9 @@ void step(const Params& params, State& state) {
       scratch.lambda[i] = -C / (sum_grad2 + epsilon);
     }
 
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
     for (std::size_t i = 0; i < count; ++i) {
       const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
       const int end = scratch.neighbor_prefix_sum[i];
@@ -388,6 +397,9 @@ void step(const Params& params, State& state) {
       scratch.delta_z[i] = delta_z;
     }
 
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
     for (std::size_t i = 0; i < count; ++i) {
       scratch.pred_x[i] += scratch.delta_x[i];
       scratch.pred_y[i] += scratch.delta_y[i];
@@ -396,6 +408,9 @@ void step(const Params& params, State& state) {
   }
 
   // Update velocities and commit predicted positions.
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
   for (std::size_t i = 0; i < count; ++i) {
     state.vel_x[i] = (scratch.pred_x[i] - state.pos_x[i]) / dt;
     state.vel_y[i] = (scratch.pred_y[i] - state.pos_y[i]) / dt;
@@ -409,6 +424,9 @@ void step(const Params& params, State& state) {
     std::fill(scratch.dv_x.begin(), scratch.dv_x.end(), 0.0f);
     std::fill(scratch.dv_y.begin(), scratch.dv_y.end(), 0.0f);
     std::fill(scratch.dv_z.begin(), scratch.dv_z.end(), 0.0f);
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
     for (std::size_t i = 0; i < count; ++i) {
       const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
       const int end = scratch.neighbor_prefix_sum[i];
@@ -437,6 +455,9 @@ void step(const Params& params, State& state) {
       scratch.dv_y[i] = dvy;
       scratch.dv_z[i] = dvz;
     }
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
     for (std::size_t i = 0; i < count; ++i) {
       state.vel_x[i] += params.visc_c * scratch.dv_x[i];
       state.vel_y[i] += params.visc_c * scratch.dv_y[i];

@@ -10,6 +10,9 @@
 #include "fluid/init.h"
 #include "fluid/vtk_writer.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #ifdef FLUID_ENABLE_CUDA
 #include "fluid/cuda.h"
 #endif
@@ -26,6 +29,10 @@ int main(int argc, char** argv) {
        "Number of simulation steps to run."},
       {"steps-per-sec", fluid::cli::OptionType::Value,
        "Simulation steps per second (sets dt = 1 / value)."},
+      {"threads", fluid::cli::OptionType::Value,
+       "Number of OpenMP threads to use (if enabled)."},
+      {"no-omp", fluid::cli::OptionType::Flag,
+       "Disable OpenMP usage (force single-thread)."},
       {"fps", fluid::cli::OptionType::Value,
        "Output frames per second (controls output stride)."},
       {"duration", fluid::cli::OptionType::Value,
@@ -59,6 +66,7 @@ int main(int argc, char** argv) {
   double steps_per_sec = std::numeric_limits<double>::quiet_NaN();
   double fps = -1.0;
   double duration = -1.0;
+  int threads = 0;
   int steps = 1;
   try {
     steps = std::stoi(parsed.value("steps", "1"));
@@ -107,6 +115,18 @@ int main(int argc, char** argv) {
       return 1;
     }
   }
+  if (parsed.has("threads")) {
+    try {
+      threads = std::stoi(parsed.value("threads", ""));
+    } catch (const std::exception&) {
+      std::cerr << "Invalid threads value." << std::endl;
+      return 1;
+    }
+    if (threads < 1) {
+      std::cerr << "threads must be >= 1." << std::endl;
+      return 1;
+    }
+  }
 
   if (backend != "cpu" && backend != "cuda") {
     std::cerr << "Unsupported backend: " << backend << std::endl;
@@ -152,6 +172,18 @@ int main(int argc, char** argv) {
       steps = 1;
     }
   }
+
+#ifdef _OPENMP
+  if (parsed.has("no-omp")) {
+    omp_set_num_threads(1);
+  } else if (threads > 0) {
+    omp_set_num_threads(threads);
+  }
+#else
+  if (parsed.has("no-omp") || threads > 0) {
+    std::cerr << "Warning: OpenMP not enabled in this build." << std::endl;
+  }
+#endif
   int output_interval = 1;
   if (output_enabled && fps > 0.0) {
     const double steps_per_frame = 1.0 / (params.dt * fps);

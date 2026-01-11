@@ -18,6 +18,11 @@ target_include_directories(fluid_core
     core/include
 )
 
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(fluid_core PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 add_library(fluid_io
   io/src/vtk_writer.cpp
 )
