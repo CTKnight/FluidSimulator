@@ -445,6 +445,8 @@ void step(const Params& params, State& state) {
     }
   }
 
+  // TODO: vorticity confinement
+
   state.time += dt;
 }
 
