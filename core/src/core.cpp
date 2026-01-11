@@ -8,6 +8,30 @@ namespace fluid {
 namespace {
 
 constexpr float kPi = 3.14159265358979323846f;
+
+bool cell_key_less(const CpuScratch::CellKey& a,
+                   const CpuScratch::CellKey& b) {
+  if (a.x != b.x) {
+    return a.x < b.x;
+  }
+  if (a.y != b.y) {
+    return a.y < b.y;
+  }
+  return a.z < b.z;
+}
+
+bool cell_key_equal(const CpuScratch::CellKey& a,
+                    const CpuScratch::CellKey& b) {
+  return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+CpuScratch::CellKey cell_key_from_pos(float x, float y, float z, float cell) {
+  const float inv = 1.0f / cell;
+  return CpuScratch::CellKey{
+      static_cast<int>(std::floor(x * inv)),
+      static_cast<int>(std::floor(y * inv)),
+      static_cast<int>(std::floor(z * inv))};
+}
 float poly6_kernel(float r2, float h) {
   const float h2 = h * h;
   if (r2 > h2) {
@@ -47,6 +71,7 @@ void CpuScratch::resize(std::size_t particle_count) {
   delta_z.resize(particle_count, 0.0f);
   lambda.resize(particle_count, 0.0f);
   neighbor_prefix_sum.resize(particle_count, 0);
+  grid_entries.resize(particle_count);
 }
 
 void CpuScratch::clear_neighbors() {
@@ -101,25 +126,111 @@ void step(const Params& params, State& state) {
     scratch.pred_z[i] = state.pos_z[i] + state.vel_z[i] * dt;
   }
 
-  // Build neighbor list from predicted positions (naive O(N^2) for now).
-  for (std::size_t i = 0; i < count; ++i) {
-    const float px = scratch.pred_x[i];
-    const float py = scratch.pred_y[i];
-    const float pz = scratch.pred_z[i];
-    for (std::size_t j = 0; j < count; ++j) {
-      if (i == j) {
-        continue;
-      }
-      const float dx = px - scratch.pred_x[j];
-      const float dy = py - scratch.pred_y[j];
-      const float dz = pz - scratch.pred_z[j];
-      const float r2 = dx * dx + dy * dy + dz * dz;
-      if (r2 < h2) {
-        scratch.neighbor_indices.push_back(static_cast<int>(j));
-      }
+  // Build neighbor list from predicted positions.
+  if (params.use_uniform_grid && h > 0.0f) {
+    scratch.grid_entries.resize(count);
+    for (std::size_t i = 0; i < count; ++i) {
+      scratch.grid_entries[i] = CpuScratch::CellEntry{
+          cell_key_from_pos(scratch.pred_x[i], scratch.pred_y[i],
+                            scratch.pred_z[i], h),
+          static_cast<int>(i)};
     }
-    scratch.neighbor_prefix_sum[i] =
-        static_cast<int>(scratch.neighbor_indices.size());
+
+    std::sort(scratch.grid_entries.begin(), scratch.grid_entries.end(),
+              [](const CpuScratch::CellEntry& a,
+                 const CpuScratch::CellEntry& b) {
+                if (cell_key_less(a.key, b.key)) {
+                  return true;
+                }
+                if (cell_key_less(b.key, a.key)) {
+                  return false;
+                }
+                return a.particle < b.particle;
+              });
+
+    scratch.grid_keys.clear();
+    scratch.grid_starts.clear();
+    scratch.grid_ends.clear();
+    if (!scratch.grid_entries.empty()) {
+      CpuScratch::CellKey current = scratch.grid_entries.front().key;
+      int start = 0;
+      for (std::size_t i = 1; i < count; ++i) {
+        if (!cell_key_equal(current, scratch.grid_entries[i].key)) {
+          scratch.grid_keys.push_back(current);
+          scratch.grid_starts.push_back(start);
+          scratch.grid_ends.push_back(static_cast<int>(i));
+          current = scratch.grid_entries[i].key;
+          start = static_cast<int>(i);
+        }
+      }
+      scratch.grid_keys.push_back(current);
+      scratch.grid_starts.push_back(start);
+      scratch.grid_ends.push_back(static_cast<int>(count));
+    }
+
+    for (std::size_t i = 0; i < count; ++i) {
+      const float px = scratch.pred_x[i];
+      const float py = scratch.pred_y[i];
+      const float pz = scratch.pred_z[i];
+      const CpuScratch::CellKey base = cell_key_from_pos(px, py, pz, h);
+
+      for (int dz = -1; dz <= 1; ++dz) {
+        for (int dy = -1; dy <= 1; ++dy) {
+          for (int dx = -1; dx <= 1; ++dx) {
+            const CpuScratch::CellKey key{base.x + dx, base.y + dy,
+                                          base.z + dz};
+            auto it = std::lower_bound(
+                scratch.grid_keys.begin(), scratch.grid_keys.end(), key,
+                [](const CpuScratch::CellKey& a,
+                   const CpuScratch::CellKey& b) {
+                  return cell_key_less(a, b);
+                });
+            if (it == scratch.grid_keys.end() || !cell_key_equal(*it, key)) {
+              continue;
+            }
+            const std::size_t cell_index =
+                static_cast<std::size_t>(it - scratch.grid_keys.begin());
+            const int start = scratch.grid_starts[cell_index];
+            const int end = scratch.grid_ends[cell_index];
+            for (int idx = start; idx < end; ++idx) {
+              const int j = scratch.grid_entries[idx].particle;
+              if (j == static_cast<int>(i)) {
+                continue;
+              }
+              const float dxp = px - scratch.pred_x[j];
+              const float dyp = py - scratch.pred_y[j];
+              const float dzp = pz - scratch.pred_z[j];
+              const float r2 = dxp * dxp + dyp * dyp + dzp * dzp;
+              if (r2 < h2) {
+                scratch.neighbor_indices.push_back(j);
+              }
+            }
+          }
+        }
+      }
+      scratch.neighbor_prefix_sum[i] =
+          static_cast<int>(scratch.neighbor_indices.size());
+    }
+  } else {
+    for (std::size_t i = 0; i < count; ++i) {
+      const float px = scratch.pred_x[i];
+      const float py = scratch.pred_y[i];
+      const float pz = scratch.pred_z[i];
+      for (std::size_t j = 0; j < count; ++j) {
+        if (i == j) {
+          continue;
+        }
+        const float dx = px - scratch.pred_x[j];
+        const float dy = py - scratch.pred_y[j];
+        const float dz = pz - scratch.pred_z[j];
+        const float r2 = dx * dx + dy * dy + dz * dz;
+        if (r2 < h2) {
+          scratch.neighbor_indices.push_back(static_cast<int>(j));
+        }
+      }
+      scratch.neighbor_prefix_sum[i] =
+          static_cast<int>(scratch.neighbor_indices.size());
+    }
   }
 
   const float density = params.density;

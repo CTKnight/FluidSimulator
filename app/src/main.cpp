@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -87,8 +88,12 @@ int main(int argc, char** argv) {
   fluid::VtkWriter vtk_writer(output_dir, "frame");
   fluid::PvdWriter pvd_writer(output_dir, "series");
   for (int step = 0; step < steps; ++step) {
+    const auto step_start = std::chrono::steady_clock::now();
     fluid::step(params, state);
-    std::cout << "step_done=" << (step + 1) << std::endl;
+    const auto step_end = std::chrono::steady_clock::now();
+    const double step_ms =
+        std::chrono::duration<double, std::milli>(step_end - step_start)
+            .count();
     if (output_enabled) {
       fluid::VtkFrameView frame;
       frame.pos_x = state.pos_x.data();
@@ -106,16 +111,8 @@ int main(int argc, char** argv) {
           fluid::VtkWriter::make_frame_filename("frame", frame_index));
     }
     if (debug_print) {
-      std::cout << "step=" << (step + 1) << " ";
-      std::cout << "p0=(" << state.pos_x[0] << ", " << state.pos_y[0] << ", "
-                << state.pos_z[0] << ") ";
-      std::cout << "v0=(" << state.vel_x[0] << ", " << state.vel_y[0] << ", "
-                << state.vel_z[0] << ")" << std::endl;
-      std::cout << "step=" << (step + 1) << " ";
-      std::cout << "p1=(" << state.pos_x[1] << ", " << state.pos_y[1] << ", "
-                << state.pos_z[1] << ") ";
-      std::cout << "v1=(" << state.vel_x[1] << ", " << state.vel_y[1] << ", "
-                << state.vel_z[1] << ")" << std::endl;
+      std::cout << "step_done=" << (step + 1) << " step_ms=" << step_ms
+          << std::endl;
     }
   }
   std::cout << "particle_count=" << state.size() << std::endl;

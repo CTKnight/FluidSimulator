@@ -16,15 +16,18 @@ struct Params {
   };
   Backend backend = Backend::Cpu;
   float density = 6000.0f;
-  float particle_mass = 1.0f;
-  float h = 0.1f;
+  // calculated based on density and particle radius
+  float particle_mass = -1.0f;
+  // calculated based on density and particle radius
+  float h = -1.0f;
+  float particle_radius = 0.01f;
   float epsilon = 600.0f;
   float n = 4.0f;
   float k = 0.0001f;
   float c = 0.00005f;
   int solver_iterations = 4;
-  float particle_radius = 0.02f;
   float neighbor_reserve_factor = 1.5f;
+  bool use_uniform_grid = true;
   struct Vec3 {
     float x = 0.0f;
     float y = -9.8f;
@@ -68,6 +71,16 @@ struct Params {
 };
 
 struct CpuScratch {
+  struct CellKey {
+    int x = 0;
+    int y = 0;
+    int z = 0;
+  };
+  struct CellEntry {
+    CellKey key;
+    int particle = 0;
+  };
+
   std::vector<float> pred_x;
   std::vector<float> pred_y;
   std::vector<float> pred_z;
@@ -77,6 +90,10 @@ struct CpuScratch {
   std::vector<float> lambda;
   std::vector<int> neighbor_indices;
   std::vector<int> neighbor_prefix_sum;
+  std::vector<CellEntry> grid_entries;
+  std::vector<CellKey> grid_keys;
+  std::vector<int> grid_starts;
+  std::vector<int> grid_ends;
 
   void resize(std::size_t particle_count);
   void clear_neighbors();
