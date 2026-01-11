@@ -142,7 +142,7 @@ void step(const Params& params, State& state) {
   const float min_r2 = min_r * min_r;
   const bool scorr_enabled = params.enable_scorr && params.scorr_k != 0.0f;
   const float scorr_dq_coeff =
-      (params.scorr_dq_coeff > 0.0f) ? params.scorr_dq_coeff : 0.1f;
+      (params.scorr_dq_coeff > 0.0f) ? params.scorr_dq_coeff : 0.3f;
   const float scorr_dq = scorr_dq_coeff * h;
   const float wdq = scorr_enabled ? poly6_kernel(scorr_dq * scorr_dq, h) : 0.0f;
   const float scorr_inv_wdq = (wdq > 1e-12f) ? (1.0f / wdq) : 0.0f;

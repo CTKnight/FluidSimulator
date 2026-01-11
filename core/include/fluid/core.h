@@ -26,7 +26,7 @@ struct Params {
   float neighbor_reserve_factor = 1.5f;
   bool use_uniform_grid = true;
   bool enable_scorr = true;
-  bool enable_xsph = true;
+  bool enable_xsph = false;
   bool enable_vorticity = false;
   float scorr_k = 0.00005f;
   int scorr_n = 4;

@@ -43,5 +43,5 @@ build-cuda
 output
 xcode
 
-output/
+output*/
 tmp/
