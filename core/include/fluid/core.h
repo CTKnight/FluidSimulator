@@ -17,9 +17,9 @@ struct Params {
   Backend backend = Backend::Cpu;
   float density = 6000.0f;
   // calculated based on density and particle radius
-  float particle_mass = -1.0f;
+  float particle_mass = 0.0f;
   // calculated based on density and particle radius
-  float h = -1.0f;
+  float h = 0.0f;
   float particle_radius = 0.01f;
   float epsilon = 600.0f;
   float n = 4.0f;
@@ -34,7 +34,7 @@ struct Params {
   float scorr_k = 0.0001f;
   int scorr_n = 4;
   float scorr_dq_coeff = 0.3f;
-  float visc_c = 0.02f;
+  float visc_c = 0.0002f;
   float vort_epsilon = 0.5f;
   float vort_norm_eps = 1e-6f;
   struct Vec3 {

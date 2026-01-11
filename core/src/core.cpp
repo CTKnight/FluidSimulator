@@ -406,6 +406,45 @@ void step(const Params& params, State& state) {
     state.pos_z[i] = scratch.pred_z[i];
   }
 
+  if (params.enable_xsph && params.visc_c != 0.0f) {
+    std::fill(scratch.dv_x.begin(), scratch.dv_x.end(), 0.0f);
+    std::fill(scratch.dv_y.begin(), scratch.dv_y.end(), 0.0f);
+    std::fill(scratch.dv_z.begin(), scratch.dv_z.end(), 0.0f);
+    for (std::size_t i = 0; i < count; ++i) {
+      const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
+      const int end = scratch.neighbor_prefix_sum[i];
+      const float vx = state.vel_x[i];
+      const float vy = state.vel_y[i];
+      const float vz = state.vel_z[i];
+      float dvx = 0.0f;
+      float dvy = 0.0f;
+      float dvz = 0.0f;
+      for (int idx = start; idx < end; ++idx) {
+        const int j = scratch.neighbor_indices[idx];
+        const float dx = state.pos_x[i] - state.pos_x[j];
+        const float dy = state.pos_y[i] - state.pos_y[j];
+        const float dz = state.pos_z[i] - state.pos_z[j];
+        const float r2 = dx * dx + dy * dy + dz * dz;
+        if (r2 < h2) {
+          const float W = poly6_kernel(r2, h);
+          const float inv_rho_j =
+              (scratch.rho[j] > 0.0f) ? (particle_mass / scratch.rho[j]) : 0.0f;
+          dvx += (state.vel_x[j] - vx) * W * inv_rho_j;
+          dvy += (state.vel_y[j] - vy) * W * inv_rho_j;
+          dvz += (state.vel_z[j] - vz) * W * inv_rho_j;
+        }
+      }
+      scratch.dv_x[i] = dvx;
+      scratch.dv_y[i] = dvy;
+      scratch.dv_z[i] = dvz;
+    }
+    for (std::size_t i = 0; i < count; ++i) {
+      state.vel_x[i] += params.visc_c * scratch.dv_x[i];
+      state.vel_y[i] += params.visc_c * scratch.dv_y[i];
+      state.vel_z[i] += params.visc_c * scratch.dv_z[i];
+    }
+  }
+
   state.time += dt;
 }
 

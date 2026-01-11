@@ -74,7 +74,7 @@ void init_planes(Params& params, float box_x, float box_y, float box_z) {
 
 void init_test_scene(Params& params, State& state) {
   const float box_x = 1.0f;
-  const float box_y = 1.0f;
+  const float box_y = 3.0f;
   const float box_z = 1.0f;
   init_planes(params, box_x, box_y, box_z);
 
@@ -94,9 +94,9 @@ void init_test_scene(Params& params, State& state) {
   }
   params.h = 2.5f * spacing;
 
-  const float block_x = box_x * 0.4f;
-  const float block_y = box_y * 0.4f;
-  const float block_z = box_z * 0.4f;
+  const float block_x = box_x * 0.5f;
+  const float block_y = box_y * 0.5f;
+  const float block_z = box_z * 0.5f;
 
   const std::size_t nx = count_from_extent(block_x, spacing);
   const std::size_t ny = count_from_extent(block_y, spacing);
