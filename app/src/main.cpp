@@ -29,6 +29,10 @@ int main(int argc, char** argv) {
        "Number of simulation steps to run."},
       {"steps-per-sec", fluid::cli::OptionType::Value,
        "Simulation steps per second (sets dt = 1 / value)."},
+      {"enable-scorr", fluid::cli::OptionType::Flag,
+       "Enable s_corr constraint."},
+      {"enable-xsph", fluid::cli::OptionType::Flag,
+       "Enable XSPH viscosity."},
       {"threads", fluid::cli::OptionType::Value,
        "Number of OpenMP threads to use (if enabled)."},
       {"no-omp", fluid::cli::OptionType::Flag,
@@ -171,6 +175,12 @@ int main(int argc, char** argv) {
     if (steps < 1) {
       steps = 1;
     }
+  }
+  if (parsed.has("enable-scorr")) {
+    params.enable_scorr = true;
+  }
+  if (parsed.has("enable-xsph")) {
+    params.enable_xsph = true;
   }
 
 #ifdef _OPENMP
