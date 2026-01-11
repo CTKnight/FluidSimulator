@@ -1,6 +1,7 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,12 @@ int main(int argc, char** argv) {
        "Print a small CPU sanity snapshot after one step."},
       {"steps", fluid::cli::OptionType::Value,
        "Number of simulation steps to run."},
+      {"steps-per-sec", fluid::cli::OptionType::Value,
+       "Simulation steps per second (sets dt = 1 / value)."},
+      {"fps", fluid::cli::OptionType::Value,
+       "Output frames per second (controls output stride)."},
+      {"duration", fluid::cli::OptionType::Value,
+       "Simulation duration in seconds (overrides --steps)."},
       {"scene", fluid::cli::OptionType::Value,
        "Scene JSON to load (legacy format)."},
       {"output-dir", fluid::cli::OptionType::Value,
@@ -49,6 +56,9 @@ int main(int argc, char** argv) {
   const std::string output_dir = parsed.value("output-dir", "output");
   const std::string scene_path = parsed.value("scene", "");
   const bool parity = parsed.has("parity");
+  double steps_per_sec = std::numeric_limits<double>::quiet_NaN();
+  double fps = -1.0;
+  double duration = -1.0;
   int steps = 1;
   try {
     steps = std::stoi(parsed.value("steps", "1"));
@@ -60,6 +70,42 @@ int main(int argc, char** argv) {
   if (steps < 1) {
     std::cerr << "Steps must be >= 1." << std::endl;
     return 1;
+  }
+  if (parsed.has("steps-per-sec")) {
+    try {
+      steps_per_sec = std::stod(parsed.value("steps-per-sec", ""));
+    } catch (const std::exception&) {
+      std::cerr << "Invalid steps-per-sec value." << std::endl;
+      return 1;
+    }
+    if (!(steps_per_sec > 0.0)) {
+      std::cerr << "steps-per-sec must be > 0." << std::endl;
+      return 1;
+    }
+  }
+  if (parsed.has("fps")) {
+    try {
+      fps = std::stod(parsed.value("fps", ""));
+    } catch (const std::exception&) {
+      std::cerr << "Invalid fps value." << std::endl;
+      return 1;
+    }
+    if (!(fps > 0.0)) {
+      std::cerr << "fps must be > 0." << std::endl;
+      return 1;
+    }
+  }
+  if (parsed.has("duration")) {
+    try {
+      duration = std::stod(parsed.value("duration", ""));
+    } catch (const std::exception&) {
+      std::cerr << "Invalid duration value." << std::endl;
+      return 1;
+    }
+    if (!(duration > 0.0)) {
+      std::cerr << "duration must be > 0." << std::endl;
+      return 1;
+    }
   }
 
   if (backend != "cpu" && backend != "cuda") {
@@ -96,6 +142,21 @@ int main(int argc, char** argv) {
     }
   } else {
     fluid::init_test_scene(params, state);
+  }
+  if (steps_per_sec == steps_per_sec) {
+    params.dt = static_cast<float>(1.0 / steps_per_sec);
+  }
+  if (duration > 0.0) {
+    steps = static_cast<int>(std::ceil(duration / params.dt));
+    if (steps < 1) {
+      steps = 1;
+    }
+  }
+  int output_interval = 1;
+  if (output_enabled && fps > 0.0) {
+    const double steps_per_frame = 1.0 / (params.dt * fps);
+    output_interval =
+        std::max(1, static_cast<int>(std::lround(steps_per_frame)));
   }
   if (parity) {
 #ifdef FLUID_ENABLE_CUDA
@@ -168,6 +229,7 @@ int main(int argc, char** argv) {
   }
   fluid::VtkWriter vtk_writer(output_dir, "frame");
   fluid::PvdWriter pvd_writer(output_dir, "series");
+  std::size_t frame_index = 0;
   for (int step = 0; step < steps; ++step) {
     const auto step_start = std::chrono::steady_clock::now();
     if (backend == "cuda") {
@@ -184,14 +246,13 @@ int main(int argc, char** argv) {
     const double step_ms =
         std::chrono::duration<double, std::milli>(step_end - step_start)
             .count();
-    if (output_enabled) {
+    if (output_enabled && (step % output_interval == 0)) {
       fluid::VtkFrameView frame;
       frame.pos_x = state.pos_x.data();
       frame.pos_y = state.pos_y.data();
       frame.pos_z = state.pos_z.data();
       frame.count = state.size();
       frame.time = state.time;
-      const std::size_t frame_index = static_cast<std::size_t>(step);
       if (!vtk_writer.write_frame(frame, frame_index)) {
         std::cerr << "Failed to write VTK frame." << std::endl;
         return 1;
@@ -199,6 +260,7 @@ int main(int argc, char** argv) {
       pvd_writer.add_frame(
           state.time,
           fluid::VtkWriter::make_frame_filename("frame", frame_index));
+      frame_index++;
     }
     if (debug_print) {
       std::cout << "step_done=" << (step + 1) << " step_ms=" << step_ms
