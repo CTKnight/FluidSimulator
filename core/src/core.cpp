@@ -8,7 +8,6 @@ namespace fluid {
 namespace {
 
 constexpr float kPi = 3.14159265358979323846f;
-
 float poly6_kernel(float r2, float h) {
   const float h2 = h * h;
   if (r2 > h2) {
@@ -30,7 +29,7 @@ float spiky_gradient_factor(float r, float h) {
   const float h6 = h2 * h2 * h2;
   const float diff = h - r;
   const float coeff = -45.0f / (kPi * h6);
-  return coeff * diff * diff / r;
+  return coeff * diff * diff;
 }
 
 }  // namespace
@@ -89,6 +88,8 @@ void step(const Params& params, State& state) {
   const float dt = params.dt;
   const float h = params.h;
   const float h2 = h * h;
+  const float min_r = 0.01f * h;
+  const float min_r2 = min_r * min_r;
 
   // Apply forces and predict positions (PBF integration step).
   for (std::size_t i = 0; i < count; ++i) {
@@ -151,7 +152,7 @@ void step(const Params& params, State& state) {
         rho += poly6_kernel(r2, h);
 
         if (r2 < h2) {
-          const float r = std::sqrt(r2);
+          const float r = std::sqrt(r2 < min_r2 ? min_r2 : r2);
           const float grad_factor = spiky_gradient_factor(r, h);
           const float gx = grad_factor * dx;
           const float gy = grad_factor * dy;
@@ -197,7 +198,7 @@ void step(const Params& params, State& state) {
         const float dz = pz - scratch.pred_z[j];
         const float r2 = dx * dx + dy * dy + dz * dz;
         if (r2 < h2) {
-          const float r = std::sqrt(r2);
+          const float r = std::sqrt(r2 < min_r2 ? min_r2 : r2);
           const float grad_factor = spiky_gradient_factor(r, h);
           const float s = lambda_i + scratch.lambda[j];
           delta_x += s * grad_factor * dx;
@@ -206,9 +207,37 @@ void step(const Params& params, State& state) {
         }
       }
 
-      scratch.delta_x[i] = delta_x * inv_density;
-      scratch.delta_y[i] = delta_y * inv_density;
-      scratch.delta_z[i] = delta_z * inv_density;
+      delta_x *= inv_density;
+      delta_y *= inv_density;
+      delta_z *= inv_density;
+
+      const std::size_t plane_count = params.planes.size();
+      if (plane_count > 0) {
+        float pred_x = px + delta_x;
+        float pred_y = py + delta_y;
+        float pred_z = pz + delta_z;
+        const float radius = params.particle_radius;
+        for (std::size_t p = 0; p < plane_count; ++p) {
+          const float nx = params.planes.nx[p];
+          const float ny = params.planes.ny[p];
+          const float nz = params.planes.nz[p];
+          const float d = params.planes.d[p];
+          const float sd = nx * pred_x + ny * pred_y + nz * pred_z - d;
+          const float penetration = radius - sd;
+          if (penetration > 0.0f) {
+            pred_x += nx * penetration;
+            pred_y += ny * penetration;
+            pred_z += nz * penetration;
+          }
+        }
+        delta_x = pred_x - px;
+        delta_y = pred_y - py;
+        delta_z = pred_z - pz;
+      }
+
+      scratch.delta_x[i] = delta_x;
+      scratch.delta_y[i] = delta_y;
+      scratch.delta_z[i] = delta_z;
     }
 
     for (std::size_t i = 0; i < count; ++i) {

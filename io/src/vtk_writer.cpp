@@ -38,20 +38,36 @@ bool VtkWriter::write_frame(const VtkFrameView& frame,
     return false;
   }
 
-  out << "# vtk DataFile Version 3.0\n";
-  out << "FluidSimulator frame " << frame_index << "\n";
-  out << "ASCII\n";
-  out << "DATASET POLYDATA\n";
-  out << "POINTS " << frame.count << " float\n";
+  out << "<?xml version=\"1.0\"?>\n";
+  out << "<VTKFile type=\"PolyData\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+  out << "  <PolyData>\n";
+  out << "    <Piece NumberOfPoints=\"" << frame.count
+      << "\" NumberOfVerts=\"" << frame.count
+      << "\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">\n";
+  out << "      <Points>\n";
+  out << "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n";
   out << std::setprecision(9) << std::fixed;
   for (std::size_t i = 0; i < frame.count; ++i) {
-    out << frame.pos_x[i] << ' ' << frame.pos_y[i] << ' ' << frame.pos_z[i]
-        << '\n';
+    out << "          " << frame.pos_x[i] << ' ' << frame.pos_y[i] << ' '
+        << frame.pos_z[i] << '\n';
   }
-  out << "VERTICES " << frame.count << ' ' << frame.count * 2 << "\n";
+  out << "        </DataArray>\n";
+  out << "      </Points>\n";
+  out << "      <Verts>\n";
+  out << "        <DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">\n";
   for (std::size_t i = 0; i < frame.count; ++i) {
-    out << "1 " << i << '\n';
+    out << "          " << i << '\n';
   }
+  out << "        </DataArray>\n";
+  out << "        <DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">\n";
+  for (std::size_t i = 0; i < frame.count; ++i) {
+    out << "          " << (i + 1) << '\n';
+  }
+  out << "        </DataArray>\n";
+  out << "      </Verts>\n";
+  out << "    </Piece>\n";
+  out << "  </PolyData>\n";
+  out << "</VTKFile>\n";
 
   if (!out) {
     return false;
@@ -66,7 +82,7 @@ std::string VtkWriter::make_frame_filename(const std::string& basename,
                                            std::size_t frame_index) {
   std::ostringstream name;
   name << basename << '_' << std::setfill('0') << std::setw(6) << frame_index
-       << ".vtk";
+       << ".vtp";
   return name.str();
 }
 

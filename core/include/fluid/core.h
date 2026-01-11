@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstddef>
 #include <vector>
 
@@ -14,21 +15,56 @@ struct Params {
     Cuda,
   };
   Backend backend = Backend::Cpu;
-  float density = 1000.0f;
+  float density = 6000.0f;
   float particle_mass = 1.0f;
   float h = 0.1f;
-  float epsilon = 1e-6f;
+  float epsilon = 600.0f;
   float n = 4.0f;
-  float k = 0.1f;
-  float c = 0.01f;
+  float k = 0.0001f;
+  float c = 0.00005f;
   int solver_iterations = 4;
   float particle_radius = 0.02f;
   float neighbor_reserve_factor = 1.5f;
   struct Vec3 {
     float x = 0.0f;
-    float y = -9.81f;
+    float y = -9.8f;
     float z = 0.0f;
   } external_forces;
+  struct PlaneSoA {
+    std::vector<float> nx;
+    std::vector<float> ny;
+    std::vector<float> nz;
+    std::vector<float> d;
+
+    std::size_t size() const { return nx.size(); }
+    void resize(std::size_t count) {
+      nx.resize(count);
+      ny.resize(count);
+      nz.resize(count);
+      d.resize(count);
+    }
+    void clear() {
+      nx.clear();
+      ny.clear();
+      nz.clear();
+      d.clear();
+    }
+    void add(float nx_in, float ny_in, float nz_in, float d_in) {
+      nx.push_back(nx_in);
+      ny.push_back(ny_in);
+      nz.push_back(nz_in);
+      d.push_back(d_in);
+    }
+    void add_normalized(float nx_in, float ny_in, float nz_in, float d_in) {
+      const float len_sq = nx_in * nx_in + ny_in * ny_in + nz_in * nz_in;
+      if (len_sq > 0.0f) {
+        const float inv_len = 1.0f / std::sqrt(len_sq);
+        add(nx_in * inv_len, ny_in * inv_len, nz_in * inv_len, d_in);
+      } else {
+        add(nx_in, ny_in, nz_in, d_in);
+      }
+    }
+  } planes;
 };
 
 struct CpuScratch {

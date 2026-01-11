@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(fluid_core
   core/src/core.cpp
+  core/src/init.cpp
 )
 
 target_include_directories(fluid_core
