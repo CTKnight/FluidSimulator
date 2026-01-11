@@ -121,6 +121,9 @@ int main(int argc, char **argv) {
       n++;
     }
   }
+  if (particle_folder_to_output_good) {
+    writeFluidSeriesPvd(particle_foldername_to_output, n, frames_per_sec);
+  }
   return 0;  
 }
 

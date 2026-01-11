@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 #include <string>
 #include <stdio.h>
 #include <unordered_set>
@@ -282,5 +283,32 @@ void writeFluidToFileN(const string &particle_foldername_to_output, int n, const
   particle_file_to_output.close();
 }
 #endif
+
+inline void writeFluidSeriesPvd(const string &particle_foldername_to_output,
+                                int frame_count,
+                                double frames_per_sec) {
+  if (particle_foldername_to_output.empty() || frame_count <= 0) {
+    return;
+  }
+  const string output_filename = particle_foldername_to_output + "/series.pvd";
+  ofstream out(output_filename);
+  if (!out) {
+    cout << "Warn: can't write PVD to " << output_filename << "\n";
+    return;
+  }
+  const double dt = frames_per_sec > 0.0 ? (1.0 / frames_per_sec) : 1.0;
+  out << "<?xml version=\"1.0\"?>\n";
+  out << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+  out << "  <Collection>\n";
+  out << std::setprecision(9) << std::fixed;
+  for (int i = 0; i < frame_count; ++i) {
+    const double time = dt * static_cast<double>(i);
+    out << "    <DataSet timestep=\"" << time
+        << "\" group=\"\" part=\"0\" file=\""
+        << FileUtils::fluid_basename(i) << "\"/>\n";
+  }
+  out << "  </Collection>\n";
+  out << "</VTKFile>\n";
+}
 
 #endif
