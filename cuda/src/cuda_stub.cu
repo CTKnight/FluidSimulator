@@ -305,6 +305,11 @@ __global__ void compute_lambda(int n,
       grad_sum_x += gx;
       grad_sum_y += gy;
       grad_sum_z += gz;
+      const float grad_jx = -(particle_mass / density) * gx;
+      const float grad_jy = -(particle_mass / density) * gy;
+      const float grad_jz = -(particle_mass / density) * gz;
+      sum_grad2 += grad_jx * grad_jx + grad_jy * grad_jy +
+                   grad_jz * grad_jz;
     }
   }
 
@@ -313,10 +318,10 @@ __global__ void compute_lambda(int n,
   rho_out[i] = rho;
 
   const float C = rho / density - 1.0f;
-  const float inv_density = 1.0f / density;
-  sum_grad2 = (grad_sum_x * grad_sum_x + grad_sum_y * grad_sum_y +
-               grad_sum_z * grad_sum_z) *
-              inv_density * inv_density;
+  const float grad_ix = (particle_mass / density) * grad_sum_x;
+  const float grad_iy = (particle_mass / density) * grad_sum_y;
+  const float grad_iz = (particle_mass / density) * grad_sum_z;
+  sum_grad2 += grad_ix * grad_ix + grad_iy * grad_iy + grad_iz * grad_iz;
   lambda[i] = -C / (sum_grad2 + epsilon);
 }
 

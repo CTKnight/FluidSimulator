@@ -267,6 +267,7 @@ void step(const Params& params, State& state) {
   const float density = params.density;
   const float inv_density = 1.0f / density;
   const float particle_mass = params.particle_mass;
+  const float grad_scale = particle_mass * inv_density;
   const float epsilon = params.epsilon;
 
   // Solver loop: compute lambdas, then position corrections.
@@ -301,6 +302,11 @@ void step(const Params& params, State& state) {
           grad_sum_x += gx;
           grad_sum_y += gy;
           grad_sum_z += gz;
+          const float grad_jx = -grad_scale * gx;
+          const float grad_jy = -grad_scale * gy;
+          const float grad_jz = -grad_scale * gz;
+          sum_grad2 += grad_jx * grad_jx + grad_jy * grad_jy +
+                       grad_jz * grad_jz;
         }
       }
 
@@ -309,9 +315,10 @@ void step(const Params& params, State& state) {
       scratch.rho[i] = rho;
 
       const float C = rho * inv_density - 1.0f;
-      sum_grad2 = (grad_sum_x * grad_sum_x + grad_sum_y * grad_sum_y +
-                   grad_sum_z * grad_sum_z) *
-                  inv_density * inv_density;
+      const float grad_ix = grad_scale * grad_sum_x;
+      const float grad_iy = grad_scale * grad_sum_y;
+      const float grad_iz = grad_scale * grad_sum_z;
+      sum_grad2 += grad_ix * grad_ix + grad_iy * grad_iy + grad_iz * grad_iz;
       scratch.lambda[i] = -C / (sum_grad2 + epsilon);
     }
 
