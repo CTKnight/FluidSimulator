@@ -80,9 +80,6 @@ int main(int argc, char** argv) {
   params.backend = (backend == "cuda")
                        ? fluid::Params::Backend::Cuda
                        : fluid::Params::Backend::Cpu;
-  params.external_forces.x = 0.0f;
-  params.external_forces.y = 0.0f;
-  params.external_forces.z = 0.0f;
   fluid::State state = fluid::make_state(0);
   fluid::init_test_scene(params, state);
   fluid::VtkWriter vtk_writer(output_dir, "frame");
