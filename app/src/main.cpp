@@ -23,6 +23,8 @@ int main(int argc, char** argv) {
        "Print a small CPU sanity snapshot after one step."},
       {"steps", fluid::cli::OptionType::Value,
        "Number of simulation steps to run."},
+      {"scene", fluid::cli::OptionType::Value,
+       "Scene JSON to load (legacy format)."},
       {"output-dir", fluid::cli::OptionType::Value,
        "Directory for VTK output (for ParaView)."},
       {"parity", fluid::cli::OptionType::Flag,
@@ -45,6 +47,7 @@ int main(int argc, char** argv) {
   const bool output_enabled = !parsed.has("no-output");
   const bool debug_print = parsed.has("debug-print");
   const std::string output_dir = parsed.value("output-dir", "output");
+  const std::string scene_path = parsed.value("scene", "");
   const bool parity = parsed.has("parity");
   int steps = 1;
   try {
@@ -85,7 +88,15 @@ int main(int argc, char** argv) {
                        ? fluid::Params::Backend::Cuda
                        : fluid::Params::Backend::Cpu;
   fluid::State state = fluid::make_state(0);
-  fluid::init_test_scene(params, state);
+  if (!scene_path.empty()) {
+    std::string error;
+    if (!fluid::init_scene_from_json(scene_path, params, state, &error)) {
+      std::cerr << "Failed to load scene: " << error << std::endl;
+      return 1;
+    }
+  } else {
+    fluid::init_test_scene(params, state);
+  }
   if (parity) {
 #ifdef FLUID_ENABLE_CUDA
     fluid::State cpu_state = state;
