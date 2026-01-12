@@ -534,6 +534,56 @@ __global__ void xsph_apply_dv(int n,
   vel_z[i] += visc_c * dv_z[i];
 }
 
+__global__ void apply_plane_restitution(int n,
+                                        const float* pos_x,
+                                        const float* pos_y,
+                                        const float* pos_z,
+                                        float* vel_x,
+                                        float* vel_y,
+                                        float* vel_z,
+                                        int plane_count,
+                                        const float* plane_nx,
+                                        const float* plane_ny,
+                                        const float* plane_nz,
+                                        const float* plane_d,
+                                        float restitution,
+                                        float friction) {
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) {
+    return;
+  }
+  float vx = vel_x[i];
+  float vy = vel_y[i];
+  float vz = vel_z[i];
+  const float px = pos_x[i];
+  const float py = pos_y[i];
+  const float pz = pos_z[i];
+  for (int p = 0; p < plane_count; ++p) {
+    const float nx = plane_nx[p];
+    const float ny = plane_ny[p];
+    const float nz = plane_nz[p];
+    const float d = plane_d[p];
+    const float sd = nx * px + ny * py + nz * pz - d;
+    if (sd <= 0.0f) {
+      const float vn = nx * vx + ny * vy + nz * vz;
+      float vn_new = vn;
+      if (vn < 0.0f) {
+        vn_new = -restitution * vn;
+      }
+      const float vt_x = vx - vn * nx;
+      const float vt_y = vy - vn * ny;
+      const float vt_z = vz - vn * nz;
+      const float vt_scale = 1.0f - friction;
+      vx = vt_x * vt_scale + vn_new * nx;
+      vy = vt_y * vt_scale + vn_new * ny;
+      vz = vt_z * vt_scale + vn_new * nz;
+    }
+  }
+  vel_x[i] = vx;
+  vel_y[i] = vy;
+  vel_z[i] = vz;
+}
+
 }  // namespace
 
 int cuda_version() {
@@ -792,6 +842,25 @@ void cuda_step(const Params& params, State& state) {
         thrust::raw_pointer_cast(d_dv_y.data()),
         thrust::raw_pointer_cast(d_dv_z.data()),
         params.visc_c);
+  }
+
+  if ((params.plane_restitution > 0.0f || params.plane_friction > 0.0f) &&
+      plane_count > 0) {
+    apply_plane_restitution<<<blocks, threads>>>(
+        static_cast<int>(count),
+        thrust::raw_pointer_cast(d_pos_x.data()),
+        thrust::raw_pointer_cast(d_pos_y.data()),
+        thrust::raw_pointer_cast(d_pos_z.data()),
+        thrust::raw_pointer_cast(d_vel_x.data()),
+        thrust::raw_pointer_cast(d_vel_y.data()),
+        thrust::raw_pointer_cast(d_vel_z.data()),
+        plane_count,
+        thrust::raw_pointer_cast(d_plane_nx.data()),
+        thrust::raw_pointer_cast(d_plane_ny.data()),
+        thrust::raw_pointer_cast(d_plane_nz.data()),
+        thrust::raw_pointer_cast(d_plane_d.data()),
+        params.plane_restitution,
+        params.plane_friction);
   }
 
   thrust::copy(d_pos_x.begin(), d_pos_x.end(), state.pos_x.begin());

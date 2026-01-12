@@ -32,6 +32,8 @@ struct Params {
   int scorr_n = 4;
   float scorr_dq_coeff = 0.3f;
   float visc_c = 0.0002f;
+  float plane_restitution = 0.0f;
+  float plane_friction = 0.0f;
   float vort_epsilon = 0.5f;
   float vort_norm_eps = 1e-6f;
   struct Vec3 {

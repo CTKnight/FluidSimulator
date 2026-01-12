@@ -33,6 +33,10 @@ int main(int argc, char** argv) {
        "Enable s_corr constraint."},
       {"enable-xsph", fluid::cli::OptionType::Flag,
        "Enable XSPH viscosity."},
+      {"plane-restitution", fluid::cli::OptionType::Value,
+       "Restitution for plane collisions (0 = no bounce)."},
+      {"plane-friction", fluid::cli::OptionType::Value,
+       "Tangential damping for plane collisions (0..1)."},
       {"threads", fluid::cli::OptionType::Value,
        "Number of OpenMP threads to use (if enabled)."},
       {"no-omp", fluid::cli::OptionType::Flag,
@@ -71,6 +75,8 @@ int main(int argc, char** argv) {
   double fps = -1.0;
   double duration = -1.0;
   int threads = 0;
+  double plane_restitution = std::numeric_limits<double>::quiet_NaN();
+  double plane_friction = std::numeric_limits<double>::quiet_NaN();
   int steps = 1;
   try {
     steps = std::stoi(parsed.value("steps", "1"));
@@ -116,6 +122,30 @@ int main(int argc, char** argv) {
     }
     if (!(duration > 0.0)) {
       std::cerr << "duration must be > 0." << std::endl;
+      return 1;
+    }
+  }
+  if (parsed.has("plane-restitution")) {
+    try {
+      plane_restitution = std::stod(parsed.value("plane-restitution", ""));
+    } catch (const std::exception&) {
+      std::cerr << "Invalid plane-restitution value." << std::endl;
+      return 1;
+    }
+    if (plane_restitution < 0.0) {
+      std::cerr << "plane-restitution must be >= 0." << std::endl;
+      return 1;
+    }
+  }
+  if (parsed.has("plane-friction")) {
+    try {
+      plane_friction = std::stod(parsed.value("plane-friction", ""));
+    } catch (const std::exception&) {
+      std::cerr << "Invalid plane-friction value." << std::endl;
+      return 1;
+    }
+    if (plane_friction < 0.0 || plane_friction > 1.0) {
+      std::cerr << "plane-friction must be in [0, 1]." << std::endl;
       return 1;
     }
   }
@@ -181,6 +211,12 @@ int main(int argc, char** argv) {
   }
   if (parsed.has("enable-xsph")) {
     params.enable_xsph = true;
+  }
+  if (plane_restitution == plane_restitution) {
+    params.plane_restitution = static_cast<float>(plane_restitution);
+  }
+  if (plane_friction == plane_friction) {
+    params.plane_friction = static_cast<float>(plane_friction);
   }
 
 #ifdef _OPENMP

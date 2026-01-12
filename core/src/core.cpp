@@ -465,6 +465,47 @@ void step(const Params& params, State& state) {
     }
   }
 
+  if (params.plane_restitution > 0.0f || params.plane_friction > 0.0f) {
+    const std::size_t plane_count = params.planes.size();
+    if (plane_count > 0) {
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+      for (std::size_t i = 0; i < count; ++i) {
+        float vx = state.vel_x[i];
+        float vy = state.vel_y[i];
+        float vz = state.vel_z[i];
+        const float px = state.pos_x[i];
+        const float py = state.pos_y[i];
+        const float pz = state.pos_z[i];
+        for (std::size_t p = 0; p < plane_count; ++p) {
+          const float nx = params.planes.nx[p];
+          const float ny = params.planes.ny[p];
+          const float nz = params.planes.nz[p];
+          const float d = params.planes.d[p];
+          const float sd = nx * px + ny * py + nz * pz - d;
+          if (sd <= 0.0f) {
+            const float vn = nx * vx + ny * vy + nz * vz;
+            float vn_new = vn;
+            if (vn < 0.0f) {
+              vn_new = -params.plane_restitution * vn;
+            }
+            const float vt_x = vx - vn * nx;
+            const float vt_y = vy - vn * ny;
+            const float vt_z = vz - vn * nz;
+            const float vt_scale = 1.0f - params.plane_friction;
+            vx = vt_x * vt_scale + vn_new * nx;
+            vy = vt_y * vt_scale + vn_new * ny;
+            vz = vt_z * vt_scale + vn_new * nz;
+          }
+        }
+        state.vel_x[i] = vx;
+        state.vel_y[i] = vy;
+        state.vel_z[i] = vz;
+      }
+    }
+  }
+
   // TODO: vorticity confinement
 
   state.time += dt;
