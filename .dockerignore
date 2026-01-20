@@ -1,0 +1,6 @@
+.git
+.gitignore
+build
+build-*
+output_*
+tmp

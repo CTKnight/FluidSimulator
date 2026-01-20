@@ -12,15 +12,16 @@ CPU/CUDA parity, high-performance CUDA kernels, and a simple visualization path.
 - Rewrite in progress; minimal build/run docs are below.
 - See `CODEX.md` for rewrite guidance and parity expectations.
 
-## Build
-Single build (CPU + optional CUDA backend):
-1) `cmake -S . -B build -DBUILD_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=89`
-2) `cmake --build build -j`
+## Docker Build
+Image (CUDA base; CPU backend still works):
+1) `docker build -t fluidsim .`
+2) `docker run --rm fluidsim ./build/fluidsim --backend=cpu`
 
-If you do not have CUDA, omit `-DBUILD_CUDA=ON` and `CMAKE_CUDA_ARCHITECTURES`.
+CUDA run (requires NVIDIA Container Toolkit + compatible driver):
+`docker run --rm --gpus all fluidsim ./build/fluidsim --backend=cuda`
 
-Run (CPU): `./build/fluidsim --backend=cpu`
-Run (CUDA): `./build/fluidsim --backend=cuda` (requires CUDA build)
+Example with scene + output volume:
+`docker run --rm --gpus all -v "$PWD/output_docker_cuda:/opt/fluidsim/output_cuda" fluidsim ./build/fluidsim --backend=cuda --scene scene/fluid_million.json --steps-per-sec 120 --fps 30 --duration 4 --enable-scorr --enable-xsph --plane-restitution 0.05 --plane-friction 0.1 --output-dir output_cuda --debug-print`
 
 ## Legacy
 - The previous implementation (CS 284A Spring 2020 final project) moved to the [`legacy`](https://github.com/CTKnight/FluidSimulator/tree/legacy) branch, see also: legacy [README](https://github.com/CTKnight/FluidSimulator/blob/legacy/README.md).

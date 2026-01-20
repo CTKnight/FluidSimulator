@@ -13,9 +13,7 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#ifdef FLUID_ENABLE_CUDA
 #include "fluid/cuda.h"
-#endif
 
 int main(int argc, char** argv) {
   const std::vector<fluid::cli::OptionSpec> specs = {
@@ -169,13 +167,19 @@ int main(int argc, char** argv) {
   std::cout << "core_version=" << fluid::core_version() << std::endl;
 
   if (backend == "cuda") {
-#ifdef FLUID_ENABLE_CUDA
-    std::cout << "backend=cuda (stub)" << std::endl;
-    std::cout << "cuda_version=" << fluid::cuda_version() << std::endl;
-#else
-    std::cerr << "CUDA backend requested but not built." << std::endl;
-    return 1;
-#endif
+    int device_count = 0;
+    const char* cuda_error = nullptr;
+    if (!fluid::cuda_device_available(&device_count, &cuda_error)) {
+      if (cuda_error) {
+        std::cerr << "CUDA backend unavailable: " << cuda_error << std::endl;
+      } else {
+        std::cerr << "CUDA backend unavailable: no CUDA devices detected."
+                  << std::endl;
+      }
+      return 1;
+    }
+    std::cout << "backend=cuda" << std::endl;
+    std::cout << "cuda_devices=" << device_count << std::endl;
   } else {
     std::cout << "backend=cpu" << std::endl;
   }
@@ -239,12 +243,7 @@ int main(int argc, char** argv) {
   for (int step = 0; step < steps; ++step) {
     const auto step_start = std::chrono::steady_clock::now();
     if (backend == "cuda") {
-#ifdef FLUID_ENABLE_CUDA
       fluid::cuda_step(params, state);
-#else
-      std::cerr << "CUDA backend requested but not built." << std::endl;
-      return 1;
-#endif
     } else {
       fluid::step(params, state);
     }
@@ -274,9 +273,8 @@ int main(int argc, char** argv) {
     }
   }
   std::cout << "particle_count=" << state.size() << std::endl;
-  std::cout << "time=" << state.time << std::endl;
-  std::cout << "output_enabled=" << (output_enabled ? "true" : "false")
-            << std::endl;
+  std::cout << "end_time=" << state.time << std::endl;
+  std::cout << "output_enabled=" << (output_enabled ? "true" : "false") << std::endl;
   if (output_enabled && !pvd_writer.write()) {
     std::cerr << "Failed to write PVD index." << std::endl;
     return 1;

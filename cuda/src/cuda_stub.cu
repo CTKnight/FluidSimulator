@@ -590,6 +590,30 @@ int cuda_version() {
   return 1;
 }
 
+bool cuda_device_available(int* count, const char** error) {
+  int device_count = 0;
+  cudaError_t err = cudaGetDeviceCount(&device_count);
+  if (count) {
+    *count = 0;
+  }
+  if (error) {
+    *error = nullptr;
+  }
+  if (err == cudaErrorNoDevice) {
+    return false;
+  }
+  if (err != cudaSuccess) {
+    if (error) {
+      *error = cudaGetErrorString(err);
+    }
+    return false;
+  }
+  if (count) {
+    *count = device_count;
+  }
+  return device_count > 0;
+}
+
 void cuda_step(const Params& params, State& state) {
   const std::size_t count = state.size();
   if (count == 0) {
