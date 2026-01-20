@@ -49,8 +49,6 @@ int main(int argc, char** argv) {
        "Scene JSON to load (legacy format)."},
       {"output-dir", fluid::cli::OptionType::Value,
        "Directory for VTK output (for ParaView)."},
-      {"parity", fluid::cli::OptionType::Flag,
-       "Run CPU vs CUDA parity check (no output)."},
   };
 
   const fluid::cli::ParseResult parsed =
@@ -70,7 +68,6 @@ int main(int argc, char** argv) {
   const bool debug_print = parsed.has("debug-print");
   const std::string output_dir = parsed.value("output-dir", "output");
   const std::string scene_path = parsed.value("scene", "");
-  const bool parity = parsed.has("parity");
   double steps_per_sec = std::numeric_limits<double>::quiet_NaN();
   double fps = -1.0;
   double duration = -1.0;
@@ -235,75 +232,6 @@ int main(int argc, char** argv) {
     const double steps_per_frame = 1.0 / (params.dt * fps);
     output_interval =
         std::max(1, static_cast<int>(std::lround(steps_per_frame)));
-  }
-  if (parity) {
-#ifdef FLUID_ENABLE_CUDA
-    fluid::State cpu_state = state;
-    fluid::State cuda_state = state;
-    for (int step = 0; step < steps; ++step) {
-      const auto cpu_start = std::chrono::steady_clock::now();
-      fluid::step(params, cpu_state);
-      const auto cpu_end = std::chrono::steady_clock::now();
-      const auto cuda_start = std::chrono::steady_clock::now();
-      fluid::cuda_step(params, cuda_state);
-      const auto cuda_end = std::chrono::steady_clock::now();
-
-      double max_abs_pos = 0.0;
-      double sum_sq_pos = 0.0;
-      double max_abs_vel = 0.0;
-      double sum_sq_vel = 0.0;
-      const std::size_t n = cpu_state.size();
-      for (std::size_t i = 0; i < n; ++i) {
-        const double dx = static_cast<double>(cpu_state.pos_x[i]) -
-                          static_cast<double>(cuda_state.pos_x[i]);
-        const double dy = static_cast<double>(cpu_state.pos_y[i]) -
-                          static_cast<double>(cuda_state.pos_y[i]);
-        const double dz = static_cast<double>(cpu_state.pos_z[i]) -
-                          static_cast<double>(cuda_state.pos_z[i]);
-        const double adx = std::abs(dx);
-        const double ady = std::abs(dy);
-        const double adz = std::abs(dz);
-        max_abs_pos = std::max(max_abs_pos, adx);
-        max_abs_pos = std::max(max_abs_pos, ady);
-        max_abs_pos = std::max(max_abs_pos, adz);
-        sum_sq_pos += dx * dx + dy * dy + dz * dz;
-
-        const double dvx = static_cast<double>(cpu_state.vel_x[i]) -
-                           static_cast<double>(cuda_state.vel_x[i]);
-        const double dvy = static_cast<double>(cpu_state.vel_y[i]) -
-                           static_cast<double>(cuda_state.vel_y[i]);
-        const double dvz = static_cast<double>(cpu_state.vel_z[i]) -
-                           static_cast<double>(cuda_state.vel_z[i]);
-        const double advx = std::abs(dvx);
-        const double advy = std::abs(dvy);
-        const double advz = std::abs(dvz);
-        max_abs_vel = std::max(max_abs_vel, advx);
-        max_abs_vel = std::max(max_abs_vel, advy);
-        max_abs_vel = std::max(max_abs_vel, advz);
-        sum_sq_vel += dvx * dvx + dvy * dvy + dvz * dvz;
-      }
-
-      const double denom = (n > 0) ? (3.0 * static_cast<double>(n)) : 1.0;
-      const double rmse_pos = std::sqrt(sum_sq_pos / denom);
-      const double rmse_vel = std::sqrt(sum_sq_vel / denom);
-      const double cpu_ms =
-          std::chrono::duration<double, std::milli>(cpu_end - cpu_start)
-              .count();
-      const double cuda_ms =
-          std::chrono::duration<double, std::milli>(cuda_end - cuda_start)
-              .count();
-      std::cout << "parity_step=" << (step + 1) << " cpu_ms=" << cpu_ms
-                << " cuda_ms=" << cuda_ms << " max_abs_pos=" << max_abs_pos
-                << " rmse_pos=" << rmse_pos << " max_abs_vel=" << max_abs_vel
-                << " rmse_vel=" << rmse_vel << std::endl;
-    }
-    std::cout << "particle_count=" << cpu_state.size() << std::endl;
-    std::cout << "time=" << cpu_state.time << std::endl;
-    return 0;
-#else
-    std::cerr << "Parity mode requires CUDA backend." << std::endl;
-    return 1;
-#endif
   }
   fluid::VtkWriter vtk_writer(output_dir, "frame");
   fluid::PvdWriter pvd_writer(output_dir, "series");
