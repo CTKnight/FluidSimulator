@@ -465,6 +465,111 @@ void step(const Params& params, State& state) {
     }
   }
 
+  if (params.enable_vorticity && params.vort_epsilon != 0.0f) {
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for (std::size_t i = 0; i < count; ++i) {
+      const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
+      const int end = scratch.neighbor_prefix_sum[i];
+      const float px = state.pos_x[i];
+      const float py = state.pos_y[i];
+      const float pz = state.pos_z[i];
+      const float vx = state.vel_x[i];
+      const float vy = state.vel_y[i];
+      const float vz = state.vel_z[i];
+      float ox = 0.0f;
+      float oy = 0.0f;
+      float oz = 0.0f;
+      for (int idx = start; idx < end; ++idx) {
+        const int j = scratch.neighbor_indices[idx];
+        const float dx = px - state.pos_x[j];
+        const float dy = py - state.pos_y[j];
+        const float dz = pz - state.pos_z[j];
+        const float r2 = dx * dx + dy * dy + dz * dz;
+        if (r2 < h2) {
+          const float r = std::sqrt(r2 < min_r2 ? min_r2 : r2);
+          const float grad_factor = spiky_gradient_factor(r, h);
+          const float gx = grad_factor * dx;
+          const float gy = grad_factor * dy;
+          const float gz = grad_factor * dz;
+          const float dvx = state.vel_x[j] - vx;
+          const float dvy = state.vel_y[j] - vy;
+          const float dvz = state.vel_z[j] - vz;
+          ox += dvy * gz - dvz * gy;
+          oy += dvz * gx - dvx * gz;
+          oz += dvx * gy - dvy * gx;
+        }
+      }
+      scratch.omega_x[i] = ox;
+      scratch.omega_y[i] = oy;
+      scratch.omega_z[i] = oz;
+      scratch.omega_mag[i] = std::sqrt(ox * ox + oy * oy + oz * oz);
+    }
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for (std::size_t i = 0; i < count; ++i) {
+      const int start = (i == 0) ? 0 : scratch.neighbor_prefix_sum[i - 1];
+      const int end = scratch.neighbor_prefix_sum[i];
+      const float px = state.pos_x[i];
+      const float py = state.pos_y[i];
+      const float pz = state.pos_z[i];
+      const float omi = scratch.omega_mag[i];
+      float ex = 0.0f;
+      float ey = 0.0f;
+      float ez = 0.0f;
+      for (int idx = start; idx < end; ++idx) {
+        const int j = scratch.neighbor_indices[idx];
+        const float dx = px - state.pos_x[j];
+        const float dy = py - state.pos_y[j];
+        const float dz = pz - state.pos_z[j];
+        const float r2 = dx * dx + dy * dy + dz * dz;
+        if (r2 < h2) {
+          const float r = std::sqrt(r2 < min_r2 ? min_r2 : r2);
+          const float grad_factor = spiky_gradient_factor(r, h);
+          const float gx = grad_factor * dx;
+          const float gy = grad_factor * dy;
+          const float gz = grad_factor * dz;
+          const float coeff = scratch.omega_mag[j] - omi;
+          ex += coeff * gx;
+          ey += coeff * gy;
+          ez += coeff * gz;
+        }
+      }
+      scratch.eta_x[i] = ex;
+      scratch.eta_y[i] = ey;
+      scratch.eta_z[i] = ez;
+    }
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for (std::size_t i = 0; i < count; ++i) {
+      const float ex = scratch.eta_x[i];
+      const float ey = scratch.eta_y[i];
+      const float ez = scratch.eta_z[i];
+      const float eta_len = std::sqrt(ex * ex + ey * ey + ez * ez);
+      float nx = 0.0f;
+      float ny = 0.0f;
+      float nz = 0.0f;
+      if (eta_len > params.vort_norm_eps) {
+        const float inv = 1.0f / eta_len;
+        nx = ex * inv;
+        ny = ey * inv;
+        nz = ez * inv;
+      }
+      const float ox = scratch.omega_x[i];
+      const float oy = scratch.omega_y[i];
+      const float oz = scratch.omega_z[i];
+      const float fx = params.vort_epsilon * (ny * oz - nz * oy);
+      const float fy = params.vort_epsilon * (nz * ox - nx * oz);
+      const float fz = params.vort_epsilon * (nx * oy - ny * ox);
+      state.vel_x[i] += dt * fx;
+      state.vel_y[i] += dt * fy;
+      state.vel_z[i] += dt * fz;
+    }
+  }
+
   if (params.plane_restitution > 0.0f || params.plane_friction > 0.0f) {
     const std::size_t plane_count = params.planes.size();
     if (plane_count > 0) {
@@ -505,8 +610,6 @@ void step(const Params& params, State& state) {
       }
     }
   }
-
-  // TODO: vorticity confinement
 
   state.time += dt;
 }

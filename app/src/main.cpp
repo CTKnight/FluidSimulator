@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
        "Enable s_corr constraint."},
       {"enable-xsph", fluid::cli::OptionType::Flag,
        "Enable XSPH viscosity."},
+      {"enable-vorticity", fluid::cli::OptionType::Flag,
+       "Enable vorticity confinement."},
       {"plane-restitution", fluid::cli::OptionType::Value,
        "Restitution for plane collisions (0 = no bounce)."},
       {"plane-friction", fluid::cli::OptionType::Value,
@@ -212,6 +214,9 @@ int main(int argc, char** argv) {
   }
   if (parsed.has("enable-xsph")) {
     params.enable_xsph = true;
+  }
+  if (parsed.has("enable-vorticity")) {
+    params.enable_vorticity = true;
   }
   if (plane_restitution == plane_restitution) {
     params.plane_restitution = static_cast<float>(plane_restitution);

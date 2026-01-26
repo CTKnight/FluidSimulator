@@ -534,6 +534,153 @@ __global__ void xsph_apply_dv(int n,
   vel_z[i] += visc_c * dv_z[i];
 }
 
+__global__ void vorticity_compute_omega(int n,
+                                        const float* pos_x,
+                                        const float* pos_y,
+                                        const float* pos_z,
+                                        const float* vel_x,
+                                        const float* vel_y,
+                                        const float* vel_z,
+                                        const int* neighbor_indices,
+                                        const int* neighbor_prefix_sum,
+                                        float h,
+                                        float h2,
+                                        float min_r2,
+                                        float* omega_x,
+                                        float* omega_y,
+                                        float* omega_z,
+                                        float* omega_mag) {
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) {
+    return;
+  }
+  const int start = (i == 0) ? 0 : neighbor_prefix_sum[i - 1];
+  const int end = neighbor_prefix_sum[i];
+  const float px = pos_x[i];
+  const float py = pos_y[i];
+  const float pz = pos_z[i];
+  const float vx = vel_x[i];
+  const float vy = vel_y[i];
+  const float vz = vel_z[i];
+  float ox = 0.0f;
+  float oy = 0.0f;
+  float oz = 0.0f;
+  for (int idx = start; idx < end; ++idx) {
+    const int j = neighbor_indices[idx];
+    const float dx = px - pos_x[j];
+    const float dy = py - pos_y[j];
+    const float dz = pz - pos_z[j];
+    const float r2 = dx * dx + dy * dy + dz * dz;
+    if (r2 < h2) {
+      const float r = sqrtf(r2 < min_r2 ? min_r2 : r2);
+      const float grad_factor = spiky_gradient_factor(r, h);
+      const float gx = grad_factor * dx;
+      const float gy = grad_factor * dy;
+      const float gz = grad_factor * dz;
+      const float dvx = vel_x[j] - vx;
+      const float dvy = vel_y[j] - vy;
+      const float dvz = vel_z[j] - vz;
+      ox += dvy * gz - dvz * gy;
+      oy += dvz * gx - dvx * gz;
+      oz += dvx * gy - dvy * gx;
+    }
+  }
+  omega_x[i] = ox;
+  omega_y[i] = oy;
+  omega_z[i] = oz;
+  omega_mag[i] = sqrtf(ox * ox + oy * oy + oz * oz);
+}
+
+__global__ void vorticity_compute_eta(int n,
+                                      const float* pos_x,
+                                      const float* pos_y,
+                                      const float* pos_z,
+                                      const int* neighbor_indices,
+                                      const int* neighbor_prefix_sum,
+                                      float h,
+                                      float h2,
+                                      float min_r2,
+                                      const float* omega_mag,
+                                      float* eta_x,
+                                      float* eta_y,
+                                      float* eta_z) {
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) {
+    return;
+  }
+  const int start = (i == 0) ? 0 : neighbor_prefix_sum[i - 1];
+  const int end = neighbor_prefix_sum[i];
+  const float px = pos_x[i];
+  const float py = pos_y[i];
+  const float pz = pos_z[i];
+  const float omi = omega_mag[i];
+  float ex = 0.0f;
+  float ey = 0.0f;
+  float ez = 0.0f;
+  for (int idx = start; idx < end; ++idx) {
+    const int j = neighbor_indices[idx];
+    const float dx = px - pos_x[j];
+    const float dy = py - pos_y[j];
+    const float dz = pz - pos_z[j];
+    const float r2 = dx * dx + dy * dy + dz * dz;
+    if (r2 < h2) {
+      const float r = sqrtf(r2 < min_r2 ? min_r2 : r2);
+      const float grad_factor = spiky_gradient_factor(r, h);
+      const float gx = grad_factor * dx;
+      const float gy = grad_factor * dy;
+      const float gz = grad_factor * dz;
+      const float coeff = omega_mag[j] - omi;
+      ex += coeff * gx;
+      ey += coeff * gy;
+      ez += coeff * gz;
+    }
+  }
+  eta_x[i] = ex;
+  eta_y[i] = ey;
+  eta_z[i] = ez;
+}
+
+__global__ void vorticity_apply(int n,
+                                const float* omega_x,
+                                const float* omega_y,
+                                const float* omega_z,
+                                const float* eta_x,
+                                const float* eta_y,
+                                const float* eta_z,
+                                float* vel_x,
+                                float* vel_y,
+                                float* vel_z,
+                                float dt,
+                                float vort_epsilon,
+                                float vort_norm_eps) {
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= n) {
+    return;
+  }
+  const float ex = eta_x[i];
+  const float ey = eta_y[i];
+  const float ez = eta_z[i];
+  const float eta_len = sqrtf(ex * ex + ey * ey + ez * ez);
+  float nx = 0.0f;
+  float ny = 0.0f;
+  float nz = 0.0f;
+  if (eta_len > vort_norm_eps) {
+    const float inv = 1.0f / eta_len;
+    nx = ex * inv;
+    ny = ey * inv;
+    nz = ez * inv;
+  }
+  const float ox = omega_x[i];
+  const float oy = omega_y[i];
+  const float oz = omega_z[i];
+  const float fx = vort_epsilon * (ny * oz - nz * oy);
+  const float fy = vort_epsilon * (nz * ox - nx * oz);
+  const float fz = vort_epsilon * (nx * oy - ny * ox);
+  vel_x[i] += dt * fx;
+  vel_y[i] += dt * fy;
+  vel_z[i] += dt * fz;
+}
+
 __global__ void apply_plane_restitution(int n,
                                         const float* pos_x,
                                         const float* pos_y,
@@ -866,6 +1013,61 @@ void cuda_step(const Params& params, State& state) {
         thrust::raw_pointer_cast(d_dv_y.data()),
         thrust::raw_pointer_cast(d_dv_z.data()),
         params.visc_c);
+  }
+
+  if (params.enable_vorticity && params.vort_epsilon != 0.0f) {
+    thrust::device_vector<float> d_omega_x(count);
+    thrust::device_vector<float> d_omega_y(count);
+    thrust::device_vector<float> d_omega_z(count);
+    thrust::device_vector<float> d_omega_mag(count);
+    thrust::device_vector<float> d_eta_x(count);
+    thrust::device_vector<float> d_eta_y(count);
+    thrust::device_vector<float> d_eta_z(count);
+    vorticity_compute_omega<<<blocks, threads>>>(
+        static_cast<int>(count),
+        thrust::raw_pointer_cast(d_pos_x.data()),
+        thrust::raw_pointer_cast(d_pos_y.data()),
+        thrust::raw_pointer_cast(d_pos_z.data()),
+        thrust::raw_pointer_cast(d_vel_x.data()),
+        thrust::raw_pointer_cast(d_vel_y.data()),
+        thrust::raw_pointer_cast(d_vel_z.data()),
+        thrust::raw_pointer_cast(d_neighbor_indices.data()),
+        thrust::raw_pointer_cast(d_neighbor_prefix_sum.data()),
+        h,
+        h2,
+        min_r2,
+        thrust::raw_pointer_cast(d_omega_x.data()),
+        thrust::raw_pointer_cast(d_omega_y.data()),
+        thrust::raw_pointer_cast(d_omega_z.data()),
+        thrust::raw_pointer_cast(d_omega_mag.data()));
+    vorticity_compute_eta<<<blocks, threads>>>(
+        static_cast<int>(count),
+        thrust::raw_pointer_cast(d_pos_x.data()),
+        thrust::raw_pointer_cast(d_pos_y.data()),
+        thrust::raw_pointer_cast(d_pos_z.data()),
+        thrust::raw_pointer_cast(d_neighbor_indices.data()),
+        thrust::raw_pointer_cast(d_neighbor_prefix_sum.data()),
+        h,
+        h2,
+        min_r2,
+        thrust::raw_pointer_cast(d_omega_mag.data()),
+        thrust::raw_pointer_cast(d_eta_x.data()),
+        thrust::raw_pointer_cast(d_eta_y.data()),
+        thrust::raw_pointer_cast(d_eta_z.data()));
+    vorticity_apply<<<blocks, threads>>>(
+        static_cast<int>(count),
+        thrust::raw_pointer_cast(d_omega_x.data()),
+        thrust::raw_pointer_cast(d_omega_y.data()),
+        thrust::raw_pointer_cast(d_omega_z.data()),
+        thrust::raw_pointer_cast(d_eta_x.data()),
+        thrust::raw_pointer_cast(d_eta_y.data()),
+        thrust::raw_pointer_cast(d_eta_z.data()),
+        thrust::raw_pointer_cast(d_vel_x.data()),
+        thrust::raw_pointer_cast(d_vel_y.data()),
+        thrust::raw_pointer_cast(d_vel_z.data()),
+        dt,
+        params.vort_epsilon,
+        params.vort_norm_eps);
   }
 
   if ((params.plane_restitution > 0.0f || params.plane_friction > 0.0f) &&
