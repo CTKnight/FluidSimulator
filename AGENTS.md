@@ -1,4 +1,4 @@
-# CODEX.md
+# AGENTS.md
 
 This document is for Codex (and other assistants) working on a rewrite of
 FluidSimulator. Keep it short, practical, and updated as the rewrite progresses.
