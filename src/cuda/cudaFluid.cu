@@ -294,6 +294,8 @@ void Fluid_cuda::simulate(REAL delta_t,
   const FluidParameters *fp,
   thrust::device_vector<Plane_cuda> &collision_objects) {
   int num_particles = particle_positions->size();
+  const int threads_per_block = 256;
+  const int blocks = (num_particles + threads_per_block - 1) / threads_per_block;
   const auto particle_positions_dev = REAL3AsVector3R(particle_positions_device);
   const auto particle_predicted_positions = REAL3AsVector3R(particle_predicted_positions_device);
   const auto particle_velocities = REAL3AsVector3R(particle_velocities_device);
@@ -309,7 +311,7 @@ void Fluid_cuda::simulate(REAL delta_t,
   const auto c = fp->c;
   const Vector3R &external_accelerations = fp->external_forces;
 
-  simulate_update_position_predict_position<<<num_particles,1>>>(
+  simulate_update_position_predict_position<<<blocks, threads_per_block>>>(
     num_particles,
     particle_positions_dev, 
     particle_predicted_positions, 
@@ -320,7 +322,7 @@ void Fluid_cuda::simulate(REAL delta_t,
   find_neighbors();
 
   for (int iter = 0; iter < solverIterations; iter++) {
-    calculate_lambda<<<num_particles,1>>>(
+    calculate_lambda<<<blocks, threads_per_block>>>(
       num_particles, 
       particle_positions_dev,
       neighbor_search_results_dev,
@@ -329,7 +331,7 @@ void Fluid_cuda::simulate(REAL delta_t,
       lambda_device
     );
 
-    calculate_delta_pi_and_collision_response<<<num_particles,1>>>(
+    calculate_delta_pi_and_collision_response<<<blocks, threads_per_block>>>(
       num_particles,
       particle_positions_dev,
       neighbor_search_results_dev,
@@ -341,14 +343,14 @@ void Fluid_cuda::simulate(REAL delta_t,
       thrust::raw_pointer_cast(collision_objects.data())
     );
 
-    update_predicted_positions<<<num_particles,1>>>(
+    update_predicted_positions<<<blocks, threads_per_block>>>(
       num_particles, 
       particle_predicted_positions, 
       delta_p
     );
   }
 
-  update_velocities<<<num_particles,1>>>(
+  update_velocities<<<blocks, threads_per_block>>>(
     num_particles,
     particle_positions_dev,
     particle_predicted_positions,
@@ -356,7 +358,7 @@ void Fluid_cuda::simulate(REAL delta_t,
     delta_t
   );
 
-  apply_XSPH_viscosity<<<num_particles,1>>>(
+  apply_XSPH_viscosity<<<blocks, threads_per_block>>>(
     num_particles,
     particle_positions_dev,
     particle_velocities,
