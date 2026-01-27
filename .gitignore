@@ -45,3 +45,4 @@ xcode
 
 output*/
 tmp/
+.worktrees/
