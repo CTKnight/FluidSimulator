@@ -35,10 +35,10 @@
     "particle_mass": 1,
     "density": 6000,
     "h": 0.1,
-    "epsilon": 600,
+    "epsilon": 300,
     "n": 4,
-    "k": 0.001,
-    "c": 0.00005,
+    "k": 0.0005,
+    "c": 0.0005,
     "shape": [{
         "type": "cube",
         "origin": [0, 1, 0],
